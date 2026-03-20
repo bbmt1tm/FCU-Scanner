@@ -813,7 +813,7 @@ async function startScan(idx){
   const startCam=async(c)=>{
     const s=await navigator.mediaDevices.getUserMedia(c);scanStream=s;
     const v=document.getElementById('scan-video');v.srcObject=s;await v.play();
-    barcodeDetector=new BarcodeDetector({formats:['code_128','code_39','data_matrix']});scanLoop();
+    barcodeDetector=new BarcodeDetector({formats:['code_128','code_39','ean_13','ean_8','data_matrix']});scanLoop();
   };
   try{await startCam({video:{facingMode:{exact:'environment'},width:{ideal:1920},height:{ideal:1080}}});}
   catch(e){try{await startCam({video:{facingMode:'environment'}});}catch(e2){document.getElementById('scan-unsupported').classList.add('show');}}
@@ -825,22 +825,7 @@ async function scanLoop(){
   try{const bc=await barcodeDetector.detect(v);if(bc.length>0){onDetected(bc[0].rawValue.trim().toUpperCase());return;}}catch(e){}
   scanAnimFrame=requestAnimationFrame(scanLoop);
 }
-function looksLikeSiemensSerial(val){
-  // Siemens DXR2 serials are hex strings: 0-9 and A-F, 6-14 chars
-  // Reject pure decimal strings longer than 10 chars (EAN-13 style retail barcodes)
-  if(/^\d+$/.test(val) && val.length > 10) return false;
-  // Must only contain hex characters
-  if(!/^[0-9A-F]+$/i.test(val)) return false;
-  // Must be at least 6 chars
-  if(val.length < 6) return false;
-  return true;
-}
 function onDetected(val){
-  if(!looksLikeSiemensSerial(val)){
-    // Silently ignore non-matching results and keep scanning
-    scanAnimFrame=requestAnimationFrame(scanLoop);
-    return;
-  }
   scannedValue=val;
   const f=document.getElementById('scan-flash');f.classList.remove('flash');void f.offsetWidth;f.classList.add('flash');
   if(navigator.vibrate)navigator.vibrate([80]);
