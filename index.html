@@ -346,8 +346,15 @@
   </div>
   <div class="scan-hint" id="scan-hint">Align barcode within frame</div>
   <div class="scan-footer">
+    <div class="scan-existing-box" id="scan-existing-box" style="display:none;background:rgba(17,18,20,.9);backdrop-filter:blur(16px);border:1px solid rgba(239,68,68,.4);border-radius:var(--radius);padding:12px 16px;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Current Serial Number</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div id="scan-existing-value" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--red);letter-spacing:.08em"></div>
+        <button onclick="promptClearSerial()" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:var(--red);font-family:var(--sans);font-size:13px;font-weight:700;padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap">Clear</button>
+      </div>
+    </div>
     <div class="scan-result-box" id="scan-result-box">
-      <div class="scan-result-label">Detected Serial Number</div>
+      <div class="scan-result-label">New Serial Number</div>
       <div class="scan-result-value" id="scan-result-value">—</div>
     </div>
     <div class="scan-actions">
@@ -375,6 +382,57 @@
       <button class="btn-confirm" id="btn-confirm-2" onclick="confirmSerial()" style="display:none;flex:1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Confirm
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- DUPLICATE WARNING MODAL -->
+<div class="modal-overlay" id="dupe-modal">
+  <div class="modal">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:36px;height:36px;background:rgba(245,166,35,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h3 style="margin:0">Duplicate Serial Number</h3>
+    </div>
+    <p id="dupe-message" style="margin-bottom:18px;line-height:1.6"></p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeDupeModal()">Cancel — rescan</button>
+      <button class="modal-confirm" style="background:var(--accent);color:#000" onclick="forceConfirmSerial()">Save anyway</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLEAR SERIAL MODAL -->
+<div class="modal-overlay" id="clear-modal">
+  <div class="modal">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:36px;height:36px;background:rgba(239,68,68,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+      </div>
+      <h3 style="margin:0">Clear Serial Number?</h3>
+    </div>
+    <p id="clear-message" style="margin-bottom:18px;line-height:1.6"></p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeClearModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmClearSerial()">Yes, clear it</button>
+    </div>
+  </div>
+</div>
+
+<!-- REPLACE SERIAL MODAL -->
+<div class="modal-overlay" id="replace-modal">
+  <div class="modal">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:36px;height:36px;background:rgba(245,166,35,.15);border-radius:8px;display:flex;align-items:center;justify-content:justify;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h3 style="margin:0">Replace Serial Number?</h3>
+    </div>
+    <p id="replace-message" style="margin-bottom:18px;line-height:1.6"></p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeReplaceModal()">Cancel — rescan</button>
+      <button class="modal-confirm" style="background:var(--accent);color:#000" onclick="forceReplaceSerial()">Yes, replace it</button>
     </div>
   </div>
 </div>
@@ -413,8 +471,7 @@ let autosaveTimeout=null, lastSavedTime=null;
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 
 // ── INIT ──
-window.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('version-label').textContent=APP_VERSION;
+function refreshHomeScreen(){
   const saved=loadLS();
   if(saved){
     const done=saved.rows.filter(r=>r.serial).length,total=saved.rows.length,pct=total?(done/total*100):0;
@@ -424,7 +481,14 @@ window.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('resume-progress-bar').style.width=pct+'%';
     document.getElementById('resume-progress-label').textContent=done+' of '+total+' complete';
     document.getElementById('load-divider').querySelector('span').textContent='or start new session';
+  }else{
+    document.getElementById('resume-card').classList.remove('show');
+    document.getElementById('load-divider').querySelector('span').textContent='load a spreadsheet to begin';
   }
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('version-label').textContent=APP_VERSION;
+  refreshHomeScreen();
 });
 
 function fmtTime(iso){
@@ -485,7 +549,7 @@ async function loadProgressFile(file){
 
 // ── FILE LOAD — multi-sheet aware ──
 function loadNewFile(){document.getElementById('file-input').click();}
-function goHome(){showScreen('screen-load');}
+function goHome(){refreshHomeScreen();showScreen('screen-load');}
 
 async function handleFileSelect(file){
   if(!file)return;
@@ -736,6 +800,14 @@ async function startScan(idx){
   document.getElementById('scan-hint').style.display='block';
   document.getElementById('manual-serial').value='';
   document.getElementById('scan-unsupported').classList.remove('show');
+  // Show existing serial box if this FCU already has one
+  const existingBox=document.getElementById('scan-existing-box');
+  if(fcu.serial){
+    document.getElementById('scan-existing-value').textContent=fcu.serial;
+    existingBox.style.display='block';
+  }else{
+    existingBox.style.display='none';
+  }
   showScreen('screen-scan');
   if(!('BarcodeDetector' in window)){document.getElementById('scan-unsupported').classList.add('show');return;}
   const startCam=async(c)=>{
@@ -788,6 +860,38 @@ function onManualInput(val){
 function confirmSerial(){
   if(!scannedValue)return;
   const fcu=rows.find(r=>r._idx===currentFcuIdx);if(!fcu)return;
+  // Check if this FCU already has a different serial — warn before replacing
+  if(fcu.serial&&fcu.serial.toUpperCase()!==scannedValue.toUpperCase()){
+    document.getElementById('replace-message').innerHTML=
+      'This will replace the existing serial:<br><br>'+
+      '<span style="font-family:var(--mono);color:var(--red);font-size:15px">'+fcu.serial+'</span><br><br>'+
+      'with the new scan:<br><br>'+
+      '<span style="font-family:var(--mono);color:var(--accent);font-size:15px">'+scannedValue+'</span>';
+    document.getElementById('replace-modal').classList.add('show');
+    return;
+  }
+  // Check for duplicate serial across all rows (excluding this FCU itself)
+  const dupes=rows.filter(r=>r._idx!==currentFcuIdx&&r.serial&&r.serial.toUpperCase()===scannedValue.toUpperCase());
+  if(dupes.length>0){
+    const dupeList=dupes.map(r=>'<strong style="color:var(--accent);font-family:var(--mono)">'+(r.floor?r.floor+' · ':'')+r.fcuRef+'</strong>').join('<br>');
+    document.getElementById('dupe-message').innerHTML=
+      'Serial <span style="font-family:var(--mono);color:var(--accent)">'+scannedValue+'</span> is already assigned to:<br><br>'+dupeList+'<br><br>This may mean the wrong controller was scanned.';
+    document.getElementById('dupe-modal').classList.add('show');
+    return;
+  }
+  doSaveSerial();
+}
+function closeDupeModal(){
+  document.getElementById('dupe-modal').classList.remove('show');
+  // Resume scanning
+  retryScanning();
+}
+function forceConfirmSerial(){
+  document.getElementById('dupe-modal').classList.remove('show');
+  doSaveSerial();
+}
+function doSaveSerial(){
+  const fcu=rows.find(r=>r._idx===currentFcuIdx);if(!fcu)return;
   fcu.serial=scannedValue;stopScan();renderList();triggerAutosave();
   showToast('Saved: '+scannedValue,true);
 }
@@ -821,6 +925,30 @@ function numpadDel(){
 function numpadClear(){
   document.getElementById('search-input').value='';
   renderList();
+}
+
+// ── CLEAR / REPLACE SERIAL ──
+function promptClearSerial(){
+  const fcu=rows.find(r=>r._idx===currentFcuIdx);if(!fcu)return;
+  document.getElementById('clear-message').innerHTML=
+    'This will permanently remove the serial number for <strong>'+esc(fcu.fcuRef)+'</strong>:<br><br>'+
+    '<span style="font-family:var(--mono);color:var(--red);font-size:15px">'+esc(fcu.serial)+'</span>';
+  document.getElementById('clear-modal').classList.add('show');
+}
+function closeClearModal(){document.getElementById('clear-modal').classList.remove('show');}
+function confirmClearSerial(){
+  const fcu=rows.find(r=>r._idx===currentFcuIdx);if(!fcu)return;
+  fcu.serial='';
+  document.getElementById('clear-modal').classList.remove('show');
+  document.getElementById('scan-existing-box').style.display='none';
+  triggerAutosave();
+  stopScan();
+  showToast('Serial cleared',false);
+}
+function closeReplaceModal(){document.getElementById('replace-modal').classList.remove('show');}
+function forceReplaceSerial(){
+  document.getElementById('replace-modal').classList.remove('show');
+  doSaveSerial();
 }
 
 // ── DROP ZONE ──
