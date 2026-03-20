@@ -5,1130 +5,778 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#111214">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>FCU Scanner</title>
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow:wght@300;400;500;600;700&display=swap');
-
     :root {
-      --bg: #111214;
-      --surface: #1a1c1f;
-      --surface2: #222428;
-      --border: #2e3035;
-      --accent: #f5a623;
-      --accent-dim: rgba(245,166,35,0.15);
-      --accent-glow: rgba(245,166,35,0.4);
-      --green: #22c55e;
-      --green-dim: rgba(34,197,94,0.15);
-      --red: #ef4444;
-      --text: #e8e9eb;
-      --text-muted: #6b7280;
-      --text-dim: #9ca3af;
-      --mono: 'Space Mono', monospace;
-      --sans: 'Barlow', sans-serif;
-      --radius: 12px;
-      --radius-sm: 8px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-    html, body {
-      height: 100%; overflow: hidden;
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--sans);
-      font-size: 16px;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    #app {
-      height: 100%; display: flex; flex-direction: column;
-      position: relative; overflow: hidden;
-    }
-
-    /* ─── SCREENS ─── */
-    .screen {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.25s ease;
-      overflow: hidden;
-    }
-    .screen.active {
-      opacity: 1; pointer-events: all;
-    }
-
-    /* ─── LOAD SCREEN ─── */
-    #screen-load {
-      background: var(--bg);
-      align-items: center; justify-content: center;
-      padding: 32px 24px;
-      gap: 0;
-    }
-
-    .load-logo {
-      display: flex; flex-direction: column; align-items: center;
-      margin-bottom: 48px;
-    }
-
-    .load-logo .icon-wrap {
-      width: 72px; height: 72px;
-      background: var(--accent-dim);
-      border: 2px solid var(--accent);
-      border-radius: 18px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 16px;
-      box-shadow: 0 0 32px var(--accent-glow);
-    }
-
-    .load-logo svg { width: 36px; height: 36px; }
-
-    .load-logo h1 {
-      font-family: var(--mono);
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: var(--text);
-    }
-
-    .load-logo p {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 4px;
-      font-weight: 400;
-      letter-spacing: 0.02em;
-    }
-
-    .load-zone {
-      width: 100%; max-width: 340px;
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 32px 24px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      position: relative;
-      margin-bottom: 16px;
-    }
-    .load-zone:hover, .load-zone.drag { border-color: var(--accent); background: var(--accent-dim); }
-
-    .load-zone .load-icon {
-      width: 44px; height: 44px;
-      margin: 0 auto 12px;
-      color: var(--text-muted);
-    }
-    .load-zone h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-    .load-zone p { font-size: 13px; color: var(--text-muted); }
-
-    #file-input { display: none; }
-
-    .demo-btn {
-      background: none; border: 1px solid var(--border);
-      color: var(--text-muted); font-family: var(--sans);
-      font-size: 13px; padding: 10px 20px;
-      border-radius: var(--radius-sm); cursor: pointer;
-      transition: all 0.2s; width: 100%; max-width: 340px;
-    }
-    .demo-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-    /* ─── COLUMN MAP SCREEN ─── */
-    #screen-map {
-      background: var(--bg);
-      padding: 0;
-    }
-
-    .map-header {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-    .map-header h2 { font-size: 18px; font-weight: 700; }
-    .map-header p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-
-    .map-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-
-    .map-preview {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 12px;
-      overflow-x: auto;
-    }
-
-    .preview-table { font-family: var(--mono); font-size: 11px; border-collapse: collapse; white-space: nowrap; }
-    .preview-table th { color: var(--accent); font-weight: 700; padding: 4px 10px 4px 0; text-align: left; }
-    .preview-table td { color: var(--text-dim); padding: 3px 10px 3px 0; }
-
-    .map-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
-    .map-field select {
-      width: 100%; background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text); font-family: var(--sans); font-size: 15px;
-      padding: 12px 14px; border-radius: var(--radius-sm); appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 14px center;
-    }
-    .map-field select:focus { outline: none; border-color: var(--accent); }
-
-    .map-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
-
-    /* ─── LIST SCREEN ─── */
-    #screen-list { background: var(--bg); }
-
-    .list-header {
-      padding: 14px 16px 0;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .list-header-top {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .list-title { font-size: 17px; font-weight: 700; }
-
-    .header-actions { display: flex; gap: 8px; align-items: center; }
-
-    .btn-icon {
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text); border-radius: var(--radius-sm);
-      padding: 8px 12px; cursor: pointer; font-size: 13px; font-weight: 600;
-      font-family: var(--sans); display: flex; align-items: center; gap: 6px;
-      transition: all 0.15s; white-space: nowrap;
-    }
-    .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-icon svg { width: 15px; height: 15px; }
-
-    .btn-export {
-      background: var(--accent); border: none; color: #000;
-      font-weight: 700;
-    }
-    .btn-export:hover { background: #e09520; color: #000; border-color: transparent; }
-
-    .progress-bar-wrap {
-      height: 3px; background: var(--surface2);
-      border-radius: 2px; margin-bottom: 10px;
-    }
-    .progress-bar {
-      height: 100%; background: var(--accent);
-      border-radius: 2px; transition: width 0.4s ease;
-    }
-
-    .progress-label {
-      font-size: 11px; color: var(--text-muted);
-      font-family: var(--mono);
-      margin-bottom: 10px;
-    }
-
-    .search-row {
-      display: flex; gap: 8px; padding-bottom: 12px; align-items: center;
-    }
-
-    .search-wrap {
-      flex: 1; position: relative;
-    }
-
-    .search-wrap svg {
-      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-      width: 16px; height: 16px; color: var(--text-muted); pointer-events: none;
-    }
-
-    .search-input {
-      width: 100%; background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text); font-family: var(--sans); font-size: 15px;
-      padding: 10px 12px 10px 38px; border-radius: var(--radius-sm);
-    }
-    .search-input:focus { outline: none; border-color: var(--accent); }
-    .search-input::placeholder { color: var(--text-muted); }
-
-    .filter-chips {
-      display: flex; gap: 6px; padding: 0 16px 10px;
-      overflow-x: auto; scrollbar-width: none;
-    }
-    .filter-chips::-webkit-scrollbar { display: none; }
-
-    .chip {
-      flex-shrink: 0; padding: 5px 12px;
-      border-radius: 20px; font-size: 12px; font-weight: 600;
-      border: 1px solid var(--border); background: none;
-      color: var(--text-muted); cursor: pointer; font-family: var(--sans);
-      transition: all 0.15s;
-    }
-    .chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
-
-    .fcu-list {
-      flex: 1; overflow-y: auto;
-      padding: 8px 12px;
-      display: flex; flex-direction: column; gap: 6px;
-    }
-
-    .fcu-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex; align-items: center; gap: 14px;
-      -webkit-user-select: none; user-select: none;
-    }
-    .fcu-card:active { transform: scale(0.98); }
-    .fcu-card:hover { border-color: var(--accent); background: var(--surface2); }
-    .fcu-card.done { border-color: rgba(34,197,94,0.3); }
-    .fcu-card.done:hover { border-color: var(--green); }
-
-    .fcu-status {
-      flex-shrink: 0; width: 32px; height: 32px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      border: 2px solid var(--border);
-      background: var(--surface2);
-      transition: all 0.2s;
-    }
-    .fcu-card.done .fcu-status {
-      border-color: var(--green);
-      background: var(--green-dim);
-    }
-    .fcu-status svg { width: 16px; height: 16px; color: var(--text-muted); }
-    .fcu-card.done .fcu-status svg { color: var(--green); }
-
-    .fcu-info { flex: 1; min-width: 0; }
-    .fcu-ref {
-      font-family: var(--mono); font-size: 14px; font-weight: 700;
-      color: var(--text); letter-spacing: 0.02em;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .fcu-room {
-      font-size: 13px; color: var(--text-muted); margin-top: 2px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .fcu-serial {
-      font-family: var(--mono); font-size: 11px;
-      color: var(--green); margin-top: 4px;
-      letter-spacing: 0.04em;
-    }
-    .fcu-serial.empty { color: var(--text-muted); }
-
-    .fcu-arrow { flex-shrink: 0; color: var(--text-muted); }
-    .fcu-arrow svg { width: 16px; height: 16px; }
-
-    .empty-state {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 10px; padding: 40px;
-      color: var(--text-muted); text-align: center;
-    }
-    .empty-state svg { width: 40px; height: 40px; opacity: 0.4; }
-    .empty-state p { font-size: 14px; }
-
-    /* ─── SCAN SCREEN ─── */
-    #screen-scan {
-      background: #000;
-    }
-
-    .scan-header {
-      position: absolute; top: 0; left: 0; right: 0; z-index: 10;
-      padding: 14px 16px;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-    }
-
-    .scan-back {
-      background: rgba(255,255,255,0.12); border: none;
-      color: #fff; font-family: var(--sans); font-size: 14px; font-weight: 600;
-      padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .scan-back svg { width: 16px; height: 16px; }
-
-    .scan-fcu-info {
-      margin-top: 10px;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: var(--radius);
-      padding: 10px 14px;
-    }
-    .scan-fcu-ref {
-      font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--accent);
-    }
-    .scan-fcu-room { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 2px; }
-
-    #scan-video {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%; object-fit: cover;
-    }
-
-    .scan-overlay {
-      position: absolute; inset: 0; z-index: 5;
-      pointer-events: none;
-    }
-
-    .scan-reticle {
-      position: absolute;
-      left: 50%; top: 50%; transform: translate(-50%, -50%);
-      width: 280px; height: 100px;
-    }
-
-    .scan-reticle::before, .scan-reticle::after {
-      content: ''; position: absolute;
-      width: 30px; height: 30px;
-    }
-    /* corner brackets */
-    .corner { position: absolute; width: 30px; height: 30px; }
-    .corner.tl { top: 0; left: 0; border-top: 3px solid var(--accent); border-left: 3px solid var(--accent); border-radius: 4px 0 0 0; }
-    .corner.tr { top: 0; right: 0; border-top: 3px solid var(--accent); border-right: 3px solid var(--accent); border-radius: 0 4px 0 0; }
-    .corner.bl { bottom: 0; left: 0; border-bottom: 3px solid var(--accent); border-left: 3px solid var(--accent); border-radius: 0 0 0 4px; }
-    .corner.br { bottom: 0; right: 0; border-bottom: 3px solid var(--accent); border-right: 3px solid var(--accent); border-radius: 0 0 4px 0; }
-
-    .scan-line {
-      position: absolute;
-      left: 0; right: 0; height: 2px;
-      background: linear-gradient(to right, transparent, var(--accent), transparent);
-      top: 50%;
-      animation: scanline 1.8s ease-in-out infinite;
-      border-radius: 1px;
-      box-shadow: 0 0 8px var(--accent-glow);
-    }
-
-    @keyframes scanline {
-      0% { top: 15%; opacity: 0; }
-      10% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { top: 85%; opacity: 0; }
-    }
-
-    .scan-hint {
-      position: absolute;
-      bottom: 180px; left: 0; right: 0;
-      text-align: center; z-index: 5;
-      color: rgba(255,255,255,0.7);
-      font-size: 13px; font-weight: 500;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
-    }
-
-    .scan-footer {
-      position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
-      padding: 20px 20px 36px;
-      background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
-    }
-
-    .scan-result-box {
-      background: rgba(17,18,20,0.9);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      margin-bottom: 14px;
-      display: none;
-    }
-    .scan-result-box.visible { display: block; }
-    .scan-result-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-    .scan-result-value {
-      font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--accent);
-      letter-spacing: 0.08em;
-    }
-
-    .scan-actions { display: flex; gap: 10px; }
-
-    .btn-retry {
-      flex: 0 0 auto; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-      color: #fff; font-family: var(--sans); font-size: 15px; font-weight: 600;
-      padding: 14px 20px; border-radius: var(--radius); cursor: pointer;
-    }
-
-    .btn-confirm {
-      flex: 1; background: var(--accent); border: none;
-      color: #000; font-family: var(--sans); font-size: 16px; font-weight: 700;
-      padding: 14px; border-radius: var(--radius); cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .btn-confirm svg { width: 18px; height: 18px; }
-
-    /* ─── SCAN SUCCESS FLASH ─── */
-    .scan-flash {
-      position: absolute; inset: 0; z-index: 20;
-      background: rgba(34,197,94,0.25);
-      pointer-events: none; opacity: 0;
-      transition: opacity 0.1s;
-    }
-    .scan-flash.flash { animation: flashAnim 0.5s ease-out forwards; }
-
-    @keyframes flashAnim {
-      0% { opacity: 1; }
-      100% { opacity: 0; }
-    }
-
-    /* ─── SHARED BUTTON ─── */
-    .btn-primary {
-      width: 100%; background: var(--accent); border: none;
-      color: #000; font-family: var(--sans); font-size: 16px; font-weight: 700;
-      padding: 15px; border-radius: var(--radius); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s;
-    }
-    .btn-primary:hover { background: #e09520; }
-
-    /* ─── TOAST ─── */
-    .toast {
-      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text); font-size: 14px; font-weight: 500;
-      padding: 10px 18px; border-radius: 100px;
-      opacity: 0; transition: all 0.25s; z-index: 9999;
-      white-space: nowrap; pointer-events: none;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .toast.success { border-color: var(--green); }
-    .toast svg { width: 15px; height: 15px; color: var(--green); }
-
-    /* ─── INSTALL BANNER ─── */
-    .install-banner {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
-      background: var(--surface); border-top: 1px solid var(--border);
-      padding: 14px 16px; display: flex; align-items: center; gap: 12px;
-      display: none;
-    }
-    .install-banner.show { display: flex; }
-    .install-banner p { flex: 1; font-size: 13px; color: var(--text-dim); }
-    .install-btn {
-      background: var(--accent); border: none; color: #000;
-      font-family: var(--sans); font-size: 13px; font-weight: 700;
-      padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap;
-    }
-    .install-close {
-      background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px;
-    }
-
-    /* ─── SCANNER UNSUPPORTED ─── */
-    .scan-unsupported {
-      position: absolute; inset: 0; z-index: 15;
-      background: var(--bg);
-      display: none; flex-direction: column; align-items: center; justify-content: center;
-      padding: 32px; text-align: center; gap: 12px;
-    }
-    .scan-unsupported.show { display: flex; }
-    .scan-unsupported h3 { font-size: 18px; }
-    .scan-unsupported p { font-size: 14px; color: var(--text-muted); }
-
-    /* Manual input fallback */
-    .manual-input-wrap {
-      margin-top: 16px; width: 100%;
-    }
-    .manual-input {
-      width: 100%; background: var(--surface2); border: 2px solid var(--border);
-      color: var(--text); font-family: var(--mono); font-size: 18px;
-      padding: 14px; border-radius: var(--radius); text-align: center;
-      letter-spacing: 0.08em; text-transform: uppercase;
-    }
-    .manual-input:focus { outline: none; border-color: var(--accent); }
-    .manual-input::placeholder { color: var(--text-muted); font-size: 14px; letter-spacing: 0; }
+      --bg:#111214;--surface:#1a1c1f;--surface2:#222428;--border:#2e3035;
+      --accent:#f5a623;--accent-dim:rgba(245,166,35,0.15);--accent-glow:rgba(245,166,35,0.4);
+      --green:#22c55e;--green-dim:rgba(34,197,94,0.15);
+      --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.15);
+      --red:#ef4444;--text:#e8e9eb;--text-muted:#6b7280;--text-dim:#9ca3af;
+      --mono:'Space Mono',monospace;--sans:'Barlow',sans-serif;
+      --radius:12px;--radius-sm:8px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+    #app{height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+    .screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .22s ease;overflow:hidden}
+    .screen.active{opacity:1;pointer-events:all}
+
+    /* ── LOAD ── */
+    #screen-load{background:var(--bg);align-items:center;justify-content:center;padding:24px;gap:0;overflow-y:auto}
+    .load-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:28px}
+    .load-logo .icon-wrap{width:68px;height:68px;background:var(--accent-dim);border:2px solid var(--accent);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 0 28px var(--accent-glow)}
+    .load-logo h1{font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:.05em}
+    .load-logo p{font-size:12px;color:var(--text-muted);margin-top:3px}
+    .resume-card{width:100%;max-width:340px;background:var(--surface);border:2px solid var(--blue);border-radius:var(--radius);padding:16px;margin-bottom:14px;display:none}
+    .resume-card.show{display:block}
+    .resume-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .resume-icon{width:34px;height:34px;background:var(--blue-dim);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .resume-icon svg{width:17px;height:17px;color:var(--blue)}
+    .resume-title{font-size:14px;font-weight:700}
+    .resume-meta{font-size:11px;color:var(--text-muted);margin-top:2px}
+    .resume-progress{height:4px;background:var(--surface2);border-radius:2px;margin-bottom:8px}
+    .resume-progress-bar{height:100%;background:var(--blue);border-radius:2px}
+    .resume-progress-label{font-size:11px;color:var(--text-muted);font-family:var(--mono);margin-bottom:12px}
+    .resume-actions{display:flex;gap:8px}
+    .btn-resume{flex:1;background:var(--blue);border:none;color:#fff;font-family:var(--sans);font-size:14px;font-weight:700;padding:10px;border-radius:var(--radius-sm);cursor:pointer}
+    .btn-discard{background:none;border:1px solid var(--border);color:var(--text-muted);font-family:var(--sans);font-size:13px;padding:10px 14px;border-radius:var(--radius-sm);cursor:pointer}
+    .load-divider{width:100%;max-width:340px;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .load-divider::before,.load-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+    .load-divider span{font-size:11px;color:var(--text-muted);white-space:nowrap}
+    .load-zone{width:100%;max-width:340px;border:2px dashed var(--border);border-radius:var(--radius);padding:24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:10px}
+    .load-zone:hover,.load-zone.drag{border-color:var(--accent);background:var(--accent-dim)}
+    .load-zone .load-icon{width:38px;height:38px;margin:0 auto 10px;color:var(--text-muted)}
+    .load-zone h2{font-size:15px;font-weight:600;margin-bottom:3px}
+    .load-zone p{font-size:12px;color:var(--text-muted)}
+    #file-input,#progress-file-input{display:none}
+    .load-secondary-btn{width:100%;max-width:340px;background:none;border:1px solid var(--border);color:var(--text-muted);font-family:var(--sans);font-size:13px;padding:10px 16px;border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+    .load-secondary-btn:hover{border-color:var(--blue);color:var(--blue)}
+    .load-secondary-btn svg{width:14px;height:14px;flex-shrink:0}
+
+    /* ── MAP ── */
+    #screen-map{background:var(--bg)}
+    .map-header{padding:18px 18px 14px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .map-header h2{font-size:17px;font-weight:700}
+    .map-header p{font-size:13px;color:var(--text-muted);margin-top:3px}
+    .map-body{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+    .map-preview{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;overflow-x:auto}
+    .preview-table{font-family:var(--mono);font-size:11px;border-collapse:collapse;white-space:nowrap}
+    .preview-table th{color:var(--accent);font-weight:700;padding:4px 10px 4px 0;text-align:left}
+    .preview-table td{color:var(--text-dim);padding:3px 10px 3px 0}
+    .map-notice{background:var(--blue-dim);border:1px solid var(--blue);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--text-dim);display:none}
+    .map-notice.show{display:block}
+    .map-notice strong{color:var(--blue);font-weight:600}
+    .map-field label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+    .map-field select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:15px;padding:11px 14px;border-radius:var(--radius-sm);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+    .map-field select:focus{outline:none;border-color:var(--accent)}
+    .map-field .hint{font-size:11px;color:var(--text-muted);margin-top:5px}
+    .map-footer{padding:14px 18px;border-top:1px solid var(--border)}
+
+    /* ── LIST ── */
+    #screen-list{background:var(--bg)}
+    .list-header{padding:12px 14px 0;background:var(--surface);border-bottom:1px solid var(--border)}
+    .list-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .list-title{font-size:16px;font-weight:700}
+    .header-actions{display:flex;gap:5px;align-items:center}
+    .btn-icon{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:7px 9px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans);display:flex;align-items:center;gap:4px;transition:all .15s;white-space:nowrap}
+    .btn-icon:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-icon svg{width:13px;height:13px}
+    .btn-save-progress{border-color:var(--blue);color:var(--blue);background:var(--blue-dim)}
+    .btn-save-progress:hover{border-color:var(--blue);color:#fff;background:var(--blue)}
+    .btn-export{background:var(--accent);border:none;color:#000;font-weight:700}
+    .btn-export:hover{background:#e09520;border-color:transparent}
+    .autosave-bar{display:flex;align-items:center;padding:4px 0 5px}
+    .autosave-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;transition:background .3s}
+    .autosave-dot.saving{background:var(--accent);animation:pulse .6s ease infinite alternate}
+    @keyframes pulse{from{opacity:1}to{opacity:.3}}
+    .autosave-text{font-size:10px;color:var(--text-muted);font-family:var(--mono);flex:1;margin-left:7px}
+    .progress-bar-wrap{height:3px;background:var(--surface2);border-radius:2px}
+    .progress-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease}
+    .progress-label{font-size:10px;color:var(--text-muted);font-family:var(--mono);padding:4px 0 8px}
+    .search-row{display:flex;gap:8px;padding-bottom:10px}
+    .search-wrap{flex:1;position:relative}
+    .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-muted);pointer-events:none}
+    .search-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:15px;padding:9px 11px 9px 36px;border-radius:var(--radius-sm)}
+    .search-input:focus{outline:none;border-color:var(--accent)}
+    .search-input::placeholder{color:var(--text-muted)}
+    .filter-chips{display:flex;gap:6px;padding:0 0 10px;overflow-x:auto;scrollbar-width:none}
+    .filter-chips::-webkit-scrollbar{display:none}
+    .chip{flex-shrink:0;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;font-family:var(--sans);transition:all .15s}
+    .chip.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .fcu-list{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:5px}
+
+    /* FCU card — wider info layout */
+    .fcu-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;-webkit-user-select:none;user-select:none}
+    .fcu-card:active{transform:scale(.98)}
+    .fcu-card:hover{border-color:var(--accent);background:var(--surface2)}
+    .fcu-card.done{border-color:rgba(34,197,94,.3)}
+    .fcu-card.done:hover{border-color:var(--green)}
+    .fcu-status{flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--border);background:var(--surface2);transition:all .2s}
+    .fcu-card.done .fcu-status{border-color:var(--green);background:var(--green-dim)}
+    .fcu-status svg{width:15px;height:15px;color:var(--text-muted)}
+    .fcu-card.done .fcu-status svg{color:var(--green)}
+    .fcu-info{flex:1;min-width:0}
+    .fcu-top-row{display:flex;align-items:baseline;gap:8px;margin-bottom:3px}
+    .fcu-ref{font-family:var(--mono);font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+    .fcu-room-number{font-family:var(--mono);font-size:11px;color:var(--accent);background:var(--accent-dim);padding:1px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0}
+    .fcu-room-name{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .fcu-serial{font-family:var(--mono);font-size:11px;color:var(--green);margin-top:3px;letter-spacing:.04em}
+    .fcu-serial.empty{color:var(--text-muted)}
+    .fcu-arrow{flex-shrink:0;color:var(--text-muted)}
+    .fcu-arrow svg{width:15px;height:15px}
+    .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px;color:var(--text-muted);text-align:center}
+    .empty-state svg{width:38px;height:38px;opacity:.4}
+
+    /* ── SCAN ── */
+    #screen-scan{background:#000}
+    .scan-header{position:absolute;top:0;left:0;right:0;z-index:10;padding:14px 16px;background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent)}
+    .scan-back{background:rgba(255,255,255,.12);border:none;color:#fff;font-family:var(--sans);font-size:14px;font-weight:600;padding:8px 14px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:6px}
+    .scan-back svg{width:16px;height:16px}
+    .scan-fcu-info{margin-top:10px;background:rgba(0,0,0,.6);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:10px 14px}
+    .scan-fcu-ref{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent)}
+    .scan-fcu-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
+    .scan-room-num{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(245,166,35,.2);padding:2px 7px;border-radius:4px}
+    .scan-room-name{font-size:12px;color:rgba(255,255,255,.55)}
+    #scan-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .scan-overlay{position:absolute;inset:0;z-index:5;pointer-events:none}
+    .scan-reticle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:280px;height:100px}
+    .corner{position:absolute;width:28px;height:28px}
+    .corner.tl{top:0;left:0;border-top:3px solid var(--accent);border-left:3px solid var(--accent);border-radius:4px 0 0 0}
+    .corner.tr{top:0;right:0;border-top:3px solid var(--accent);border-right:3px solid var(--accent);border-radius:0 4px 0 0}
+    .corner.bl{bottom:0;left:0;border-bottom:3px solid var(--accent);border-left:3px solid var(--accent);border-radius:0 0 0 4px}
+    .corner.br{bottom:0;right:0;border-bottom:3px solid var(--accent);border-right:3px solid var(--accent);border-radius:0 0 4px 0}
+    .scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--accent),transparent);animation:scanline 1.8s ease-in-out infinite;border-radius:1px;box-shadow:0 0 8px var(--accent-glow)}
+    @keyframes scanline{0%{top:15%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:85%;opacity:0}}
+    .scan-hint{position:absolute;bottom:185px;left:0;right:0;text-align:center;z-index:5;color:rgba(255,255,255,.7);font-size:13px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+    .scan-footer{position:absolute;bottom:0;left:0;right:0;z-index:10;padding:14px 14px 30px;background:linear-gradient(to top,rgba(0,0,0,.95),transparent)}
+    .scan-result-box{background:rgba(17,18,20,.9);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:10px;display:none}
+    .scan-result-box.visible{display:block}
+    .scan-result-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+    .scan-result-value{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);letter-spacing:.08em}
+    .scan-actions{display:flex;gap:10px;margin-bottom:10px}
+    .btn-retry{flex:0 0 auto;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;padding:14px 18px;border-radius:var(--radius);cursor:pointer}
+    .btn-confirm{flex:1;background:var(--accent);border:none;color:#000;font-family:var(--sans);font-size:16px;font-weight:700;padding:14px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+    .btn-confirm svg{width:17px;height:17px}
+    .scan-flash{position:absolute;inset:0;z-index:20;background:rgba(34,197,94,.25);pointer-events:none;opacity:0}
+    .scan-flash.flash{animation:flashAnim .5s ease-out forwards}
+    @keyframes flashAnim{0%{opacity:1}100%{opacity:0}}
+    .manual-input-wrap{width:100%}
+    .manual-input{width:100%;background:rgba(34,36,40,.9);border:1.5px solid rgba(255,255,255,.12);color:#fff;font-family:var(--mono);font-size:17px;padding:12px;border-radius:var(--radius);text-align:center;letter-spacing:.08em;text-transform:uppercase}
+    .manual-input:focus{outline:none;border-color:var(--accent)}
+    .manual-input::placeholder{color:rgba(255,255,255,.2);font-size:12px;letter-spacing:0}
+    .scan-unsupported{position:absolute;inset:0;z-index:15;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;gap:12px}
+    .scan-unsupported.show{display:flex}
+
+    /* ── SHARED ── */
+    .btn-primary{width:100%;background:var(--accent);border:none;color:#000;font-family:var(--sans);font-size:16px;font-weight:700;padding:14px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+    .btn-primary:hover{background:#e09520}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center;padding:24px}
+    .modal-overlay.show{display:flex}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;width:100%;max-width:320px}
+    .modal h3{font-size:16px;font-weight:700;margin-bottom:8px}
+    .modal p{font-size:13px;color:var(--text-muted);margin-bottom:18px;line-height:1.5}
+    .modal-actions{display:flex;gap:10px}
+    .modal-cancel{flex:1;background:none;border:1px solid var(--border);color:var(--text-muted);font-family:var(--sans);font-size:15px;padding:11px;border-radius:var(--radius-sm);cursor:pointer}
+    .modal-confirm{flex:1;background:var(--red);border:none;color:#fff;font-family:var(--sans);font-size:15px;font-weight:700;padding:11px;border-radius:var(--radius-sm);cursor:pointer}
+    .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:500;padding:10px 18px;border-radius:100px;opacity:0;transition:all .25s;z-index:9999;white-space:nowrap;pointer-events:none;display:flex;align-items:center;gap:8px}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.success{border-color:var(--green)}
+    .toast svg{width:14px;height:14px}
+    .install-banner{position:fixed;bottom:0;left:0;right:0;z-index:1000;background:var(--surface);border-top:1px solid var(--border);padding:12px 14px;display:none;align-items:center;gap:10px}
+    .install-banner.show{display:flex}
+    .install-banner p{flex:1;font-size:13px;color:var(--text-dim)}
+    .install-btn{background:var(--accent);border:none;color:#000;font-family:var(--sans);font-size:13px;font-weight:700;padding:8px 14px;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap}
+    .install-close{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;font-size:15px}
   </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- LOAD SCREEN -->
-  <div id="screen-load" class="screen active">
-    <div class="load-logo">
-      <div class="icon-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)">
-          <rect x="2" y="4" width="2" height="16"/><rect x="6" y="4" width="1" height="16"/>
-          <rect x="9" y="4" width="2" height="16"/><rect x="13" y="4" width="1" height="16"/>
-          <rect x="16" y="4" width="3" height="16"/><rect x="21" y="4" width="1" height="16"/>
-        </svg>
-      </div>
-      <h1>FCU SCANNER</h1>
-      <p>DXR2 Serial Number Capture</p>
-    </div>
-
-    <div class="load-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
-      <svg class="load-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-        <line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/>
+<!-- LOAD -->
+<div id="screen-load" class="screen active">
+  <div class="load-logo">
+    <div class="icon-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)">
+        <rect x="2" y="4" width="2" height="16"/><rect x="6" y="4" width="1" height="16"/>
+        <rect x="9" y="4" width="2" height="16"/><rect x="13" y="4" width="1" height="16"/>
+        <rect x="16" y="4" width="3" height="16"/><rect x="21" y="4" width="1" height="16"/>
       </svg>
-      <h2>Load Spreadsheet</h2>
-      <p>Tap to select .csv or .xlsx file</p>
-      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(this.files[0])">
     </div>
-
-    <button class="demo-btn" onclick="loadDemoData()">Load demo data (for testing)</button>
+    <h1>FCU SCANNER</h1>
+    <p>DXR2 Serial Number Capture</p>
   </div>
 
-  <!-- COLUMN MAP SCREEN -->
-  <div id="screen-map" class="screen">
-    <div class="map-header">
-      <h2>Map Columns</h2>
-      <p>Tell the app which column is which</p>
-    </div>
-    <div class="map-body">
-      <div class="map-preview">
-        <table class="preview-table" id="preview-table"></table>
+  <div class="resume-card" id="resume-card">
+    <div class="resume-header">
+      <div class="resume-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
-      <div class="map-field">
-        <label>FCU Reference column</label>
-        <select id="col-fcu"></select>
-      </div>
-      <div class="map-field">
-        <label>Room Name column</label>
-        <select id="col-room"></select>
-      </div>
-      <div class="map-field">
-        <label>Serial Number column</label>
-        <select id="col-serial"></select>
-      </div>
-      <div class="map-field">
-        <label>Floor / Zone column <span style="color:var(--text-muted);font-weight:400">(optional — for filtering)</span></label>
-        <select id="col-floor"></select>
+      <div>
+        <div class="resume-title" id="resume-title">Resuming session</div>
+        <div class="resume-meta" id="resume-meta">—</div>
       </div>
     </div>
-    <div class="map-footer">
-      <button class="btn-primary" onclick="confirmMapping()">Confirm &amp; Continue →</button>
+    <div class="resume-progress"><div class="resume-progress-bar" id="resume-progress-bar" style="width:0%"></div></div>
+    <div class="resume-progress-label" id="resume-progress-label">—</div>
+    <div class="resume-actions">
+      <button class="btn-resume" onclick="resumeSession()">Resume →</button>
+      <button class="btn-discard" onclick="discardSession()">Discard</button>
     </div>
   </div>
 
-  <!-- LIST SCREEN -->
-  <div id="screen-list" class="screen">
-    <div class="list-header">
-      <div class="list-header-top">
-        <span class="list-title">FCU List</span>
-        <div class="header-actions">
-          <button class="btn-icon" onclick="loadNewFile()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            New
-          </button>
-          <button class="btn-icon btn-export" onclick="exportFile()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Export
-          </button>
-        </div>
-      </div>
-      <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
-      <div class="progress-label" id="progress-label">0 of 0 complete</div>
-      <div class="search-row">
-        <div class="search-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="search-input" id="search-input" type="text" placeholder="Search FCU or room…" oninput="renderList()">
-        </div>
-      </div>
-      <div class="filter-chips" id="floor-chips"></div>
-    </div>
-    <div class="fcu-list" id="fcu-list"></div>
+  <div class="load-divider" id="load-divider"><span>load a spreadsheet to begin</span></div>
+
+  <div class="load-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <svg class="load-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+      <line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/>
+    </svg>
+    <h2>Load Spreadsheet</h2>
+    <p>Tap to select .csv or .xlsx file</p>
+    <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(this.files[0])">
   </div>
 
-  <!-- SCAN SCREEN -->
-  <div id="screen-scan" class="screen">
-    <video id="scan-video" autoplay playsinline muted></video>
-    <div class="scan-flash" id="scan-flash"></div>
+  <button class="load-secondary-btn" onclick="document.getElementById('progress-file-input').click()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Load saved progress file (.fcusave)
+    <input type="file" id="progress-file-input" accept=".fcusave,.json" onchange="loadProgressFile(this.files[0])">
+  </button>
+  <button class="load-secondary-btn" onclick="loadDemoData()">Load demo data (testing)</button>
+</div>
 
-    <div class="scan-overlay" id="scan-overlay">
-      <div class="scan-reticle">
-        <div class="corner tl"></div><div class="corner tr"></div>
-        <div class="corner bl"></div><div class="corner br"></div>
-        <div class="scan-line"></div>
+<!-- MAP -->
+<div id="screen-map" class="screen">
+  <div class="map-header"><h2>Map Columns</h2><p>Tell the app which column is which</p></div>
+  <div class="map-body">
+    <div class="map-notice" id="map-notice"></div>
+    <div class="map-preview"><table class="preview-table" id="preview-table"></table></div>
+    <div class="map-field"><label>FCU Reference column</label><select id="col-fcu"></select></div>
+    <div class="map-field">
+      <label>Location column</label>
+      <select id="col-location"></select>
+      <div class="hint" id="location-hint" style="display:none"></div>
+    </div>
+    <div class="map-field"><label>Serial Number column</label><select id="col-serial"></select></div>
+  </div>
+  <div class="map-footer"><button class="btn-primary" onclick="confirmMapping()">Confirm &amp; Continue →</button></div>
+</div>
+
+<!-- LIST -->
+<div id="screen-list" class="screen">
+  <div class="list-header">
+    <div class="list-header-top">
+      <span class="list-title">FCU List</span>
+      <div class="header-actions">
+        <button class="btn-icon" onclick="loadNewFile()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>New
+        </button>
+        <button class="btn-icon btn-save-progress" onclick="saveProgressFile()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save
+        </button>
+        <button class="btn-icon btn-export" onclick="exportFile()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export
+        </button>
       </div>
     </div>
+    <div class="autosave-bar">
+      <div class="autosave-dot" id="autosave-dot"></div>
+      <div class="autosave-text" id="autosave-text">Not saved yet</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+    <div class="progress-label" id="progress-label">0 of 0 complete</div>
+    <div class="search-row">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="search-input" type="text" placeholder="Search FCU ref, room name or number…" oninput="renderList()">
+      </div>
+    </div>
+    <div class="filter-chips" id="floor-chips"></div>
+  </div>
+  <div class="fcu-list" id="fcu-list"></div>
+</div>
 
-    <div class="scan-header">
-      <button class="scan-back" onclick="stopScan()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-        Back
+<!-- SCAN -->
+<div id="screen-scan" class="screen">
+  <video id="scan-video" autoplay playsinline muted></video>
+  <div class="scan-flash" id="scan-flash"></div>
+  <div class="scan-overlay">
+    <div class="scan-reticle">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="scan-line"></div>
+    </div>
+  </div>
+  <div class="scan-header">
+    <button class="scan-back" onclick="stopScan()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Back
+    </button>
+    <div class="scan-fcu-info">
+      <div class="scan-fcu-ref" id="scan-fcu-ref">—</div>
+      <div class="scan-fcu-meta">
+        <span class="scan-room-num" id="scan-room-num" style="display:none"></span>
+        <span class="scan-room-name" id="scan-room-name"></span>
+      </div>
+    </div>
+  </div>
+  <div class="scan-hint" id="scan-hint">Align barcode within frame</div>
+  <div class="scan-footer">
+    <div class="scan-result-box" id="scan-result-box">
+      <div class="scan-result-label">Detected Serial Number</div>
+      <div class="scan-result-value" id="scan-result-value">—</div>
+    </div>
+    <div class="scan-actions">
+      <button class="btn-retry" id="btn-retry" onclick="retryScanning()" style="display:none">↺ Retry</button>
+      <button class="btn-confirm" id="btn-confirm" onclick="confirmSerial()" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Confirm Serial
       </button>
-      <div class="scan-fcu-info">
-        <div class="scan-fcu-ref" id="scan-fcu-ref">—</div>
-        <div class="scan-fcu-room" id="scan-fcu-room">—</div>
+      <div id="scan-scanning-label" style="flex:1;display:flex;align-items:center;justify-content:center">
+        <span style="color:rgba(255,255,255,.5);font-size:14px">Scanning…</span>
       </div>
     </div>
-
-    <div class="scan-hint" id="scan-hint">Align barcode within frame</div>
-
-    <div class="scan-footer">
-      <div class="scan-result-box" id="scan-result-box">
-        <div class="scan-result-label">Detected Serial Number</div>
-        <div class="scan-result-value" id="scan-result-value">—</div>
-      </div>
-      <div class="scan-actions">
-        <button class="btn-retry" id="btn-retry" onclick="retryScanning()" style="display:none">↺ Retry</button>
-        <button class="btn-confirm" id="btn-confirm" onclick="confirmSerial()" style="display:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Confirm Serial
-        </button>
-        <div id="scan-scanning-label" style="flex:1;display:flex;align-items:center;justify-content:center">
-          <span style="color:rgba(255,255,255,0.5);font-size:14px">Scanning…</span>
-        </div>
-      </div>
-      <!-- Manual entry fallback -->
-      <div class="manual-input-wrap">
-        <input class="manual-input" id="manual-serial" type="text" placeholder="Or type serial manually" oninput="onManualInput(this.value)">
-      </div>
-    </div>
-
-    <div class="scan-unsupported" id="scan-unsupported">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
-        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-        <circle cx="12" cy="13" r="4"/>
-      </svg>
-      <h3>Camera not available</h3>
-      <p>Use Chrome on Android for barcode scanning, or type the serial manually below.</p>
-      <div class="manual-input-wrap">
-        <input class="manual-input" id="manual-serial-2" type="text" placeholder="Type serial number" oninput="onManualInput(this.value)">
-      </div>
-      <div class="scan-actions" style="margin-top:12px; width:100%">
-        <button class="btn-retry" onclick="stopScan()">← Back</button>
-        <button class="btn-confirm" id="btn-confirm-2" onclick="confirmSerial()" style="display:none;flex:1">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Confirm
-        </button>
-      </div>
+    <div class="manual-input-wrap">
+      <input class="manual-input" id="manual-serial" type="text" placeholder="Or type serial manually" oninput="onManualInput(this.value)">
     </div>
   </div>
-
-  <!-- TOAST -->
-  <div class="toast" id="toast"></div>
-
-  <!-- INSTALL BANNER -->
-  <div class="install-banner" id="install-banner">
-    <p>Install FCU Scanner for offline use</p>
-    <button class="install-btn" id="install-btn">Install</button>
-    <button class="install-close" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
+  <div class="scan-unsupported" id="scan-unsupported">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    <h3>Camera not available</h3>
+    <p>Use Chrome on Android for barcode scanning, or type manually below.</p>
+    <div class="manual-input-wrap" style="margin-top:12px">
+      <input class="manual-input" id="manual-serial-2" type="text" placeholder="Type serial number" oninput="onManualInput(this.value)">
+    </div>
+    <div class="scan-actions" style="margin-top:12px;width:100%">
+      <button class="btn-retry" onclick="stopScan()">← Back</button>
+      <button class="btn-confirm" id="btn-confirm-2" onclick="confirmSerial()" style="display:none;flex:1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Confirm
+      </button>
+    </div>
   </div>
 </div>
 
+<!-- DISCARD MODAL -->
+<div class="modal-overlay" id="discard-modal">
+  <div class="modal">
+    <h3>Discard saved session?</h3>
+    <p>This will permanently delete all progress stored on this device.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmDiscard()">Discard</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="install-banner" id="install-banner">
+  <p>Install FCU Scanner for offline use</p>
+  <button class="install-btn" id="install-btn">Install</button>
+  <button class="install-close" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
+</div>
+</div>
+
 <script>
-// ─── STATE ───────────────────────────────────────────────────────────────
-let rows = [];          // { fcuRef, roomName, serial, floor, _idx }
-let headers = [];
-let rawData = [];       // original parsed sheet rows
-let colMap = { fcu: 0, room: 1, serial: 2, floor: -1 };
-let originalFileName = 'FCU_Serials';
-let originalFormat = 'csv'; // 'csv' or 'xlsx'
+const LS_KEY='fcu_scanner_session';
 
-let activeFloor = 'ALL';
-let currentFcuIdx = null;
+// rows: { fcuRef, roomName, roomNumber, serial, floor, _sheetName, _sheetRow, _colSerial }
+let rows=[], sheetData=[], colMap={fcu:0,location:1,serial:2};
+let originalFileName='FCU_Serials', originalFormat='xlsx';
+let activeFloor='ALL', currentFcuIdx=null;
+let scanStream=null, scanAnimFrame=null, barcodeDetector=null, scannedValue=null;
+let autosaveTimeout=null, lastSavedTime=null;
 
-let scanStream = null;
-let scanAnimFrame = null;
-let barcodeDetector = null;
-let scannedValue = null;
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 
-// ─── SCREEN NAV ──────────────────────────────────────────────────────────
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+// ── INIT ──
+window.addEventListener('DOMContentLoaded',()=>{
+  const saved=loadLS();
+  if(saved){
+    const done=saved.rows.filter(r=>r.serial).length,total=saved.rows.length,pct=total?(done/total*100):0;
+    document.getElementById('resume-card').classList.add('show');
+    document.getElementById('resume-title').textContent=saved.originalFileName||'Previous session';
+    document.getElementById('resume-meta').textContent='Last saved '+fmtTime(saved.savedAt);
+    document.getElementById('resume-progress-bar').style.width=pct+'%';
+    document.getElementById('resume-progress-label').textContent=done+' of '+total+' complete';
+    document.getElementById('load-divider').querySelector('span').textContent='or start new session';
+  }
+});
+
+function fmtTime(iso){
+  if(!iso)return'unknown';const d=new Date(iso),now=new Date(),diff=(now-d)/1000;
+  if(diff<60)return'just now';if(diff<3600)return Math.floor(diff/60)+'m ago';
+  if(diff<86400)return Math.floor(diff/3600)+'h ago';
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 }
 
-// ─── FILE LOAD ───────────────────────────────────────────────────────────
-function loadNewFile() {
-  document.getElementById('file-input').click();
+// ── LOCALSTORAGE ──
+function saveLS(){
+  const dot=document.getElementById('autosave-dot'),txt=document.getElementById('autosave-text');
+  dot.classList.add('saving');txt.textContent='Saving…';
+  const snap=buildSnap();
+  try{
+    localStorage.setItem(LS_KEY,JSON.stringify(snap));lastSavedTime=snap.savedAt;
+    setTimeout(()=>{dot.classList.remove('saving');txt.textContent='Auto-saved '+fmtTime(lastSavedTime);},400);
+  }catch(e){dot.classList.remove('saving');txt.textContent='Auto-save failed (storage full?)';}
+}
+function loadLS(){try{const r=localStorage.getItem(LS_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
+function clearLS(){localStorage.removeItem(LS_KEY);}
+function buildSnap(){return{version:2,savedAt:new Date().toISOString(),originalFileName,originalFormat,sheetData,colMap,rows};}
+function triggerAutosave(){clearTimeout(autosaveTimeout);autosaveTimeout=setTimeout(saveLS,800);}
+
+// ── RESUME ──
+function resumeSession(){
+  const saved=loadLS();if(!saved)return;
+  restoreSnap(saved);buildFloorChips();renderList();showScreen('screen-list');
+  document.getElementById('autosave-text').textContent='Last saved '+fmtTime(saved.savedAt);
+  showToast('Session resumed',true);
+}
+function restoreSnap(s){
+  rows=s.rows;sheetData=s.sheetData||[];colMap=s.colMap;
+  originalFileName=s.originalFileName||'FCU_Serials';originalFormat=s.originalFormat||'xlsx';
+  lastSavedTime=s.savedAt;
+}
+function discardSession(){document.getElementById('discard-modal').classList.add('show');}
+function confirmDiscard(){clearLS();document.getElementById('resume-card').classList.remove('show');document.getElementById('load-divider').querySelector('span').textContent='load a spreadsheet to begin';closeModal();showToast('Session cleared',false);}
+function closeModal(){document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('show'));}
+
+// ── SAVE / LOAD PROGRESS FILE ──
+function saveProgressFile(){
+  const snap=buildSnap(),blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=originalFileName+'_progress_'+new Date().toISOString().slice(0,10)+'.fcusave';
+  a.click();URL.revokeObjectURL(a.href);showToast('Progress file saved to phone',true);
+}
+async function loadProgressFile(file){
+  if(!file)return;
+  try{
+    const snap=JSON.parse(await file.text());
+    if(!snap.rows)throw new Error();
+    restoreSnap(snap);saveLS();buildFloorChips();renderList();showScreen('screen-list');
+    document.getElementById('autosave-text').textContent='Loaded · '+fmtTime(snap.savedAt);
+    showToast('Progress loaded',true);
+  }catch(e){showToast('Could not read file',false);}
 }
 
-async function handleFileSelect(file) {
-  if (!file) return;
-  originalFileName = file.name.replace(/\.(csv|xlsx|xls)$/i, '');
-  originalFormat = file.name.match(/\.xlsx?$/i) ? 'xlsx' : 'csv';
+// ── FILE LOAD — multi-sheet aware ──
+function loadNewFile(){document.getElementById('file-input').click();}
 
-  const ab = await file.arrayBuffer();
-  const wb = XLSX.read(ab, { type: 'array' });
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+async function handleFileSelect(file){
+  if(!file)return;
+  originalFileName=file.name.replace(/\.(csv|xlsx|xls)$/i,'');
+  originalFormat=file.name.match(/\.xlsx?$/i)?'xlsx':'csv';
+  const ab=await file.arrayBuffer();
+  const wb=XLSX.read(ab,{type:'array'});
 
-  if (data.length < 2) { showToast('File appears empty', false); return; }
+  // Build sheetData: array of {name, headers, rows[][]}
+  sheetData=[];
+  wb.SheetNames.forEach(name=>{
+    const ws=wb.Sheets[name];
+    const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    if(data.length<2)return;
+    // Filter out completely empty rows
+    const dataRows=data.slice(1).filter(r=>r.some(c=>c!==''&&c!==null&&c!==undefined));
+    if(!dataRows.length)return;
+    sheetData.push({name,headers:data[0].map(String),rows:dataRows});
+  });
 
-  headers = data[0].map(String);
-  rawData = data;
+  if(!sheetData.length){showToast('No data found in file',false);return;}
 
-  buildMapScreen(headers, data.slice(1, 5));
+  // Use first sheet headers for column mapping preview
+  buildMapScreen(sheetData);
   showScreen('screen-map');
 }
 
-function buildMapScreen(hdrs, preview) {
-  // Preview table
-  const tbl = document.getElementById('preview-table');
-  tbl.innerHTML = '';
-  const thead = document.createElement('tr');
-  hdrs.forEach(h => { const th = document.createElement('th'); th.textContent = h || '(empty)'; thead.appendChild(th); });
-  tbl.appendChild(thead);
-  preview.forEach(row => {
-    const tr = document.createElement('tr');
-    hdrs.forEach((_, i) => { const td = document.createElement('td'); td.textContent = String(row[i] ?? '').substring(0, 18); tr.appendChild(td); });
-    tbl.appendChild(tr);
+function buildMapScreen(sd){
+  const first=sd[0];
+  const hdrs=first.headers;
+
+  // Multi-sheet notice
+  const notice=document.getElementById('map-notice');
+  if(sd.length>1){
+    notice.className='map-notice show';
+    notice.innerHTML='<strong>'+sd.length+' sheets found:</strong> '+sd.map(s=>'<em>'+esc(s.name)+'</em> ('+s.rows.length+' FCUs)').join(', ')+'. All will be merged — sheet name used as floor filter.';
+  }else{notice.className='map-notice';}
+
+  // Preview table (first sheet, first 4 data rows)
+  const tbl=document.getElementById('preview-table');tbl.innerHTML='';
+  const tr=document.createElement('tr');hdrs.forEach(h=>{const th=document.createElement('th');th.textContent=h||'(empty)';tr.appendChild(th);});tbl.appendChild(tr);
+  first.rows.slice(0,4).forEach(row=>{
+    const tr=document.createElement('tr');hdrs.forEach((_,i)=>{const td=document.createElement('td');td.textContent=String(row[i]??'').replace(/\n/g,' ↵ ').substring(0,18);tr.appendChild(td);});tbl.appendChild(tr);
   });
 
   // Populate selects
-  ['col-fcu','col-room','col-serial','col-floor'].forEach(id => {
-    const sel = document.getElementById(id);
-    sel.innerHTML = '';
-    if (id === 'col-floor') {
-      const opt = document.createElement('option'); opt.value = -1; opt.textContent = '— None —';
-      sel.appendChild(opt);
-    }
-    hdrs.forEach((h, i) => {
-      const opt = document.createElement('option'); opt.value = i; opt.textContent = h || `Column ${i+1}`;
-      sel.appendChild(opt);
-    });
+  ['col-fcu','col-location','col-serial'].forEach(id=>{
+    const sel=document.getElementById(id);sel.innerHTML='';
+    hdrs.forEach((h,i)=>{const o=document.createElement('option');o.value=i;o.textContent=h||'Column '+(i+1);sel.appendChild(o);});
   });
 
   // Auto-detect
-  const lower = hdrs.map(h => h.toLowerCase());
-  const detect = (keywords) => {
-    for (const kw of keywords) {
-      const i = lower.findIndex(h => h.includes(kw));
-      if (i !== -1) return i;
-    }
-    return 0;
-  };
-  document.getElementById('col-fcu').value    = detect(['fcu','ref','tag','id']);
-  document.getElementById('col-room').value   = detect(['room','name','description','desc','location']);
-  document.getElementById('col-serial').value = detect(['serial','s/n','sn','barcode','number']);
-  document.getElementById('col-floor').value  = detect(['floor','level','zone','area','building']) || -1;
+  const lower=hdrs.map(h=>h.toLowerCase());
+  const det=kws=>{for(const kw of kws){const i=lower.findIndex(h=>h.includes(kw));if(i!==-1)return i;}return 0;};
+  document.getElementById('col-fcu').value=det(['unit ref','fcu','ref','tag','id']);
+  document.getElementById('col-location').value=det(['location','room','name','description']);
+  document.getElementById('col-serial').value=det(['serial','s/n','sn','barcode']);
+
+  // Check if location column has room number pattern
+  updateLocationHint();
+  document.getElementById('col-location').onchange=updateLocationHint;
 }
 
-function confirmMapping() {
-  colMap.fcu    = parseInt(document.getElementById('col-fcu').value);
-  colMap.room   = parseInt(document.getElementById('col-room').value);
-  colMap.serial = parseInt(document.getElementById('col-serial').value);
-  colMap.floor  = parseInt(document.getElementById('col-floor').value);
-
-  rows = rawData.slice(1).map((row, idx) => ({
-    fcuRef:  String(row[colMap.fcu]  ?? '').trim(),
-    roomName: String(row[colMap.room] ?? '').trim(),
-    serial:  String(row[colMap.serial] ?? '').trim(),
-    floor:   colMap.floor >= 0 ? String(row[colMap.floor] ?? '').trim() : '',
-    _idx: idx
-  })).filter(r => r.fcuRef);
-
-  buildFloorChips();
-  renderList();
-  showScreen('screen-list');
+function updateLocationHint(){
+  const sel=document.getElementById('col-location');
+  const idx=parseInt(sel.value);
+  const hint=document.getElementById('location-hint');
+  if(!sheetData.length){hint.style.display='none';return;}
+  // Sample a few values
+  const samples=sheetData[0].rows.slice(0,5).map(r=>String(r[idx]??''));
+  const hasNewline=samples.some(s=>s.includes('\n'));
+  const hasNumber=samples.some(s=>/\n\d+/.test(s));
+  if(hasNewline&&hasNumber){
+    hint.style.display='block';
+    hint.textContent='✓ Room name and number detected in this column — both will be shown separately.';
+    hint.style.color='var(--green)';
+  }else if(hasNewline){
+    hint.style.display='block';
+    hint.textContent='Multi-line values detected — first line used as name, second as number.';
+    hint.style.color='var(--text-muted)';
+  }else{hint.style.display='none';}
 }
 
-// ─── DEMO DATA ────────────────────────────────────────────────────────────
-function loadDemoData() {
-  headers = ['FCU Reference','Room Name','Serial Number','Floor'];
-  rawData = [headers];
-  const floors = ['L1','L2','L3','L4'];
-  const rooms = ['Open Office','Meeting Room','Server Room','Reception','Comms Room','Storage','Corridor','Kitchen'];
-  for (let i = 1; i <= 40; i++) {
-    const fl = floors[Math.floor((i-1)/10)];
-    rawData.push([`${fl}-FCU-${String(i).padStart(3,'0')}`, rooms[i % rooms.length], i < 8 ? `14001${i.toString(16).toUpperCase()}A80E` : '', fl]);
+// Parse location field — returns {roomName, roomNumber}
+function parseLocation(raw){
+  const s=String(raw??'').trim();
+  const parts=s.split('\n');
+  if(parts.length>=2){
+    return{roomName:parts[0].trim(),roomNumber:parts[1].trim()};
   }
-  originalFileName = 'FCU_Demo';
-  originalFormat = 'xlsx';
-  colMap = { fcu: 0, room: 1, serial: 2, floor: 3 };
-  rows = rawData.slice(1).map((row, idx) => ({
-    fcuRef: row[0], roomName: row[1], serial: row[2], floor: row[3], _idx: idx
-  }));
-  buildFloorChips();
-  renderList();
-  showScreen('screen-list');
+  // Check if ends with a number (e.g. "Boardroom 16257")
+  const m=s.match(/^(.*?)\s+(\d{4,})$/);
+  if(m)return{roomName:m[1].trim(),roomNumber:m[2].trim()};
+  return{roomName:s,roomNumber:''};
 }
 
-// ─── LIST RENDER ──────────────────────────────────────────────────────────
-function buildFloorChips() {
-  const chips = document.getElementById('floor-chips');
-  const floors = [...new Set(rows.map(r => r.floor).filter(Boolean))].sort();
-  if (floors.length < 2) { chips.style.display = 'none'; return; }
-  chips.style.display = 'flex';
-  chips.innerHTML = '';
+function confirmMapping(){
+  colMap.fcu=parseInt(document.getElementById('col-fcu').value);
+  colMap.location=parseInt(document.getElementById('col-location').value);
+  colMap.serial=parseInt(document.getElementById('col-serial').value);
 
-  const all = document.createElement('button');
-  all.className = 'chip active'; all.textContent = 'All floors';
-  all.onclick = () => { activeFloor = 'ALL'; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); all.classList.add('active'); renderList(); };
+  rows=[];
+  let globalIdx=0;
+  sheetData.forEach(sheet=>{
+    sheet.rows.forEach((row,rowIdx)=>{
+      if(!row[colMap.fcu])return;
+      const loc=parseLocation(row[colMap.location]);
+      rows.push({
+        fcuRef:String(row[colMap.fcu]).trim(),
+        roomName:loc.roomName,
+        roomNumber:loc.roomNumber,
+        serial:String(row[colMap.serial]??'').trim(),
+        floor:sheet.name,
+        _sheetName:sheet.name,
+        _sheetRow:rowIdx,
+        _idx:globalIdx++
+      });
+    });
+  });
+
+  buildFloorChips();renderList();saveLS();showScreen('screen-list');
+}
+
+// ── DEMO ──
+function loadDemoData(){
+  sheetData=[
+    {name:'Level 01',headers:['Unit Ref No.','Location','Serial Number'],rows:Array.from({length:20},(_,i)=>['FCU-1110'+(i+1).toString().padStart(3,'0'),'Boardroom\n162'+String(57+i).padStart(2,'0'),i<5?'14001'+i.toString(16).toUpperCase()+'A80E':''])},
+    {name:'Level 06',headers:['Unit Ref No.','Location','Serial Number'],rows:Array.from({length:15},(_,i)=>['FCU-1060'+(i+1).toString().padStart(3,'0'),'Meeting Room\n165'+(70+i),i<3?'24002'+i.toString(16).toUpperCase()+'B90F':''])}
+  ];
+  originalFileName='FCU_Demo';originalFormat='xlsx';
+  colMap={fcu:0,location:1,serial:2};
+  rows=[];let idx=0;
+  sheetData.forEach(s=>s.rows.forEach((r,ri)=>{
+    const loc=parseLocation(r[1]);
+    rows.push({fcuRef:r[0],roomName:loc.roomName,roomNumber:loc.roomNumber,serial:r[2],floor:s.name,_sheetName:s.name,_sheetRow:ri,_idx:idx++});
+  }));
+  buildFloorChips();renderList();saveLS();showScreen('screen-list');
+}
+
+// ── LIST ──
+function buildFloorChips(){
+  const chips=document.getElementById('floor-chips');
+  const floors=[...new Set(rows.map(r=>r.floor).filter(Boolean))].sort();
+  if(floors.length<2){chips.style.display='none';return;}
+  chips.style.display='flex';chips.innerHTML='';
+  const all=document.createElement('button');all.className='chip active';all.textContent='All floors';
+  all.onclick=()=>{activeFloor='ALL';document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));all.classList.add('active');renderList();};
   chips.appendChild(all);
-
-  floors.forEach(fl => {
-    const chip = document.createElement('button');
-    chip.className = 'chip'; chip.textContent = fl;
-    chip.onclick = () => {
-      activeFloor = fl;
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      renderList();
-    };
-    chips.appendChild(chip);
+  floors.forEach(fl=>{
+    const c=document.createElement('button');c.className='chip';c.textContent=fl;
+    c.onclick=()=>{activeFloor=fl;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');renderList();};
+    chips.appendChild(c);
   });
 }
 
-function renderList() {
-  const q = document.getElementById('search-input').value.toLowerCase().trim();
-  let visible = rows.filter(r => {
-    if (activeFloor !== 'ALL' && r.floor !== activeFloor) return false;
-    if (q && !r.fcuRef.toLowerCase().includes(q) && !r.roomName.toLowerCase().includes(q)) return false;
+function renderList(){
+  const q=document.getElementById('search-input').value.toLowerCase().trim();
+  const vis=rows.filter(r=>{
+    if(activeFloor!=='ALL'&&r.floor!==activeFloor)return false;
+    if(q&&!r.fcuRef.toLowerCase().includes(q)&&!r.roomName.toLowerCase().includes(q)&&!r.roomNumber.toLowerCase().includes(q))return false;
     return true;
   });
-
-  const done = rows.filter(r => r.serial).length;
-  const pct = rows.length ? (done / rows.length * 100) : 0;
-  document.getElementById('progress-bar').style.width = pct + '%';
-  document.getElementById('progress-label').textContent = `${done} of ${rows.length} complete`;
-
-  const list = document.getElementById('fcu-list');
-  if (visible.length === 0) {
-    list.innerHTML = `<div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <p>No FCUs match your filter</p>
-    </div>`;
-    return;
+  const done=rows.filter(r=>r.serial).length,pct=rows.length?(done/rows.length*100):0;
+  document.getElementById('progress-bar').style.width=pct+'%';
+  document.getElementById('progress-label').textContent=done+' of '+rows.length+' complete';
+  const list=document.getElementById('fcu-list');
+  if(!vis.length){
+    list.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>No FCUs match your filter</p></div>';return;
   }
-
-  list.innerHTML = '';
-  visible.forEach(r => {
-    const hasSn = !!r.serial;
-    const card = document.createElement('div');
-    card.className = 'fcu-card' + (hasSn ? ' done' : '');
-    card.innerHTML = `
-      <div class="fcu-status">
-        <svg viewBox="0 0 24 24" fill="${hasSn ? 'var(--green)' : 'none'}" stroke="${hasSn ? 'var(--green)' : 'currentColor'}" stroke-width="2">
-          ${hasSn ? '<polyline points="20 6 9 17 4 12"/>' : '<circle cx="12" cy="12" r="8"/>'}
-        </svg>
-      </div>
-      <div class="fcu-info">
-        <div class="fcu-ref">${escHtml(r.fcuRef)}</div>
-        <div class="fcu-room">${escHtml(r.roomName) || '—'}</div>
-        ${hasSn ? `<div class="fcu-serial">${escHtml(r.serial)}</div>` : `<div class="fcu-serial empty">No serial yet</div>`}
-      </div>
-      <div class="fcu-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-    `;
-    card.onclick = () => startScan(r._idx);
-    list.appendChild(card);
+  list.innerHTML='';
+  vis.forEach(r=>{
+    const hs=!!r.serial,card=document.createElement('div');
+    card.className='fcu-card'+(hs?' done':'');
+    const roomNumHtml=r.roomNumber?'<span class="fcu-room-number">'+esc(r.roomNumber)+'</span>':'';
+    card.innerHTML=
+      '<div class="fcu-status"><svg viewBox="0 0 24 24" fill="'+(hs?'var(--green)':'none')+'" stroke="'+(hs?'var(--green)':'currentColor')+'" stroke-width="2">'+(hs?'<polyline points="20 6 9 17 4 12"/>':'<circle cx="12" cy="12" r="8"/>')+'</svg></div>'+
+      '<div class="fcu-info">'+
+        '<div class="fcu-top-row"><span class="fcu-ref">'+esc(r.fcuRef)+'</span>'+roomNumHtml+'</div>'+
+        '<div class="fcu-room-name">'+esc(r.roomName||'—')+'</div>'+
+        '<div class="fcu-serial'+(hs?'':' empty')+'">'+esc(hs?r.serial:'No serial yet')+'</div>'+
+      '</div>'+
+      '<div class="fcu-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>';
+    card.onclick=()=>startScan(r._idx);list.appendChild(card);
   });
 }
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ─── EXPORT ───────────────────────────────────────────────────────────────
-function exportFile() {
-  // Rebuild raw data with updated serials
-  const updated = JSON.parse(JSON.stringify(rawData));
-  rows.forEach(r => {
-    if (r._idx + 1 < updated.length) {
-      updated[r._idx + 1][colMap.serial] = r.serial;
-    }
-  });
-
-  const ws = XLSX.utils.aoa_to_sheet(updated);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'FCU Data');
-
-  const fmt = originalFormat === 'xlsx' ? 'xlsx' : 'csv';
-  const filename = `${originalFileName}_updated.${fmt}`;
-
-  if (fmt === 'xlsx') {
-    XLSX.writeFile(wb, filename);
-  } else {
-    const csv = XLSX.utils.sheet_to_csv(ws);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-  }
-  showToast('File exported!', true);
-}
-
-// ─── SCAN ─────────────────────────────────────────────────────────────────
-async function startScan(fcuIdx) {
-  currentFcuIdx = fcuIdx;
-  scannedValue = null;
-  const fcu = rows.find(r => r._idx === fcuIdx);
-
-  document.getElementById('scan-fcu-ref').textContent = fcu.fcuRef;
-  document.getElementById('scan-fcu-room').textContent = fcu.roomName || '—';
-  document.getElementById('scan-result-box').classList.remove('visible');
-  document.getElementById('btn-confirm').style.display = 'none';
-  document.getElementById('btn-retry').style.display = 'none';
-  document.getElementById('scan-scanning-label').style.display = 'flex';
-  document.getElementById('scan-hint').style.display = 'block';
-  document.getElementById('manual-serial').value = '';
-  document.getElementById('scan-unsupported').classList.remove('show');
-
-  showScreen('screen-scan');
-
-  // Check BarcodeDetector
-  if (!('BarcodeDetector' in window)) {
-    document.getElementById('scan-unsupported').classList.add('show');
-    return;
-  }
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { exact: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+// ── EXPORT — writes back into original per-sheet structure ──
+function exportFile(){
+  const wb=XLSX.utils.book_new();
+  sheetData.forEach(sheet=>{
+    // Rebuild this sheet's rows with updated serials
+    const sheetRows=rows.filter(r=>r._sheetName===sheet.name);
+    const data=[sheet.headers,...sheet.rows.map(r=>[...r])];// deep copy
+    sheetRows.forEach(r=>{
+      if(r._sheetRow+1<data.length) data[r._sheetRow+1][colMap.serial]=r.serial;
     });
-    scanStream = stream;
-    const video = document.getElementById('scan-video');
-    video.srcObject = stream;
-    await video.play();
-
-    barcodeDetector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'data_matrix'] });
-    scanLoop();
-  } catch (err) {
-    // Try without exact facing mode
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      scanStream = stream;
-      const video = document.getElementById('scan-video');
-      video.srcObject = stream;
-      await video.play();
-      barcodeDetector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'data_matrix'] });
-      scanLoop();
-    } catch(err2) {
-      document.getElementById('scan-unsupported').classList.add('show');
-    }
+    const ws=XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb,ws,sheet.name);
+  });
+  const fmt=originalFormat==='xlsx'?'xlsx':'csv';
+  const fn=originalFileName+'_updated.'+fmt;
+  if(fmt==='xlsx'){XLSX.writeFile(wb,fn);}
+  else{
+    // CSV: flatten all sheets
+    const allRows=[sheetData[0].headers];
+    rows.forEach(r=>{
+      const raw=[...sheetData.find(s=>s.name===r._sheetName).rows[r._sheetRow]];
+      raw[colMap.serial]=r.serial;allRows.push(raw);
+    });
+    const ws=XLSX.utils.aoa_to_sheet(allRows);
+    const blob=new Blob([XLSX.utils.sheet_to_csv(ws)],{type:'text/csv'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;a.click();
   }
+  showToast('Spreadsheet exported — '+sheetData.length+' sheet'+(sheetData.length>1?'s':''),true);
 }
 
-async function scanLoop() {
-  if (!scanStream || !barcodeDetector) return;
-  const video = document.getElementById('scan-video');
-  if (video.readyState < 2) { scanAnimFrame = requestAnimationFrame(scanLoop); return; }
-
-  try {
-    const barcodes = await barcodeDetector.detect(video);
-    if (barcodes.length > 0) {
-      const val = barcodes[0].rawValue.trim().toUpperCase();
-      onBarcodeDetected(val);
-      return;
-    }
-  } catch(e) {}
-
-  scanAnimFrame = requestAnimationFrame(scanLoop);
-}
-
-function onBarcodeDetected(val) {
-  scannedValue = val;
-
-  // Flash
-  const flash = document.getElementById('scan-flash');
-  flash.classList.remove('flash');
-  void flash.offsetWidth;
-  flash.classList.add('flash');
-
-  // Vibrate
-  if (navigator.vibrate) navigator.vibrate([80]);
-
-  document.getElementById('scan-result-value').textContent = val;
-  document.getElementById('scan-result-box').classList.add('visible');
-  document.getElementById('btn-confirm').style.display = 'flex';
-  document.getElementById('btn-retry').style.display = 'block';
-  document.getElementById('scan-scanning-label').style.display = 'none';
-  document.getElementById('scan-hint').style.display = 'none';
-  document.getElementById('manual-serial').value = val;
-
-  // Pause scanning
-  if (scanAnimFrame) cancelAnimationFrame(scanAnimFrame);
-  scanAnimFrame = null;
-}
-
-function retryScanning() {
-  scannedValue = null;
+// ── SCAN ──
+async function startScan(idx){
+  currentFcuIdx=idx;scannedValue=null;
+  const fcu=rows.find(r=>r._idx===idx);
+  document.getElementById('scan-fcu-ref').textContent=fcu.fcuRef;
+  // Room number badge
+  const numEl=document.getElementById('scan-room-num');
+  const nameEl=document.getElementById('scan-room-name');
+  if(fcu.roomNumber){numEl.textContent=fcu.roomNumber;numEl.style.display='inline';}else{numEl.style.display='none';}
+  nameEl.textContent=fcu.roomName||'—';
   document.getElementById('scan-result-box').classList.remove('visible');
-  document.getElementById('btn-confirm').style.display = 'none';
-  document.getElementById('btn-retry').style.display = 'none';
-  document.getElementById('scan-scanning-label').style.display = 'flex';
-  document.getElementById('scan-hint').style.display = 'block';
-  document.getElementById('manual-serial').value = '';
+  document.getElementById('btn-confirm').style.display='none';
+  document.getElementById('btn-retry').style.display='none';
+  document.getElementById('scan-scanning-label').style.display='flex';
+  document.getElementById('scan-hint').style.display='block';
+  document.getElementById('manual-serial').value='';
+  document.getElementById('scan-unsupported').classList.remove('show');
+  showScreen('screen-scan');
+  if(!('BarcodeDetector' in window)){document.getElementById('scan-unsupported').classList.add('show');return;}
+  const startCam=async(c)=>{
+    const s=await navigator.mediaDevices.getUserMedia(c);scanStream=s;
+    const v=document.getElementById('scan-video');v.srcObject=s;await v.play();
+    barcodeDetector=new BarcodeDetector({formats:['code_128','code_39','ean_13','ean_8','data_matrix']});scanLoop();
+  };
+  try{await startCam({video:{facingMode:{exact:'environment'},width:{ideal:1920},height:{ideal:1080}}});}
+  catch(e){try{await startCam({video:{facingMode:'environment'}});}catch(e2){document.getElementById('scan-unsupported').classList.add('show');}}
+}
+async function scanLoop(){
+  if(!scanStream||!barcodeDetector)return;
+  const v=document.getElementById('scan-video');
+  if(v.readyState<2){scanAnimFrame=requestAnimationFrame(scanLoop);return;}
+  try{const bc=await barcodeDetector.detect(v);if(bc.length>0){onDetected(bc[0].rawValue.trim().toUpperCase());return;}}catch(e){}
+  scanAnimFrame=requestAnimationFrame(scanLoop);
+}
+function onDetected(val){
+  scannedValue=val;
+  const f=document.getElementById('scan-flash');f.classList.remove('flash');void f.offsetWidth;f.classList.add('flash');
+  if(navigator.vibrate)navigator.vibrate([80]);
+  document.getElementById('scan-result-value').textContent=val;
+  document.getElementById('scan-result-box').classList.add('visible');
+  document.getElementById('btn-confirm').style.display='flex';
+  document.getElementById('btn-retry').style.display='block';
+  document.getElementById('scan-scanning-label').style.display='none';
+  document.getElementById('scan-hint').style.display='none';
+  document.getElementById('manual-serial').value=val;
+  if(scanAnimFrame){cancelAnimationFrame(scanAnimFrame);scanAnimFrame=null;}
+}
+function retryScanning(){
+  scannedValue=null;
+  document.getElementById('scan-result-box').classList.remove('visible');
+  document.getElementById('btn-confirm').style.display='none';
+  document.getElementById('btn-retry').style.display='none';
+  document.getElementById('scan-scanning-label').style.display='flex';
+  document.getElementById('scan-hint').style.display='block';
+  document.getElementById('manual-serial').value='';
   scanLoop();
 }
-
-function onManualInput(val) {
-  scannedValue = val.trim().toUpperCase() || null;
-  const hasVal = !!scannedValue;
-  document.getElementById('btn-confirm').style.display = hasVal ? 'flex' : 'none';
-  document.getElementById('btn-retry').style.display = 'none';
-  document.getElementById('scan-scanning-label').style.display = hasVal ? 'none' : 'flex';
-  if (hasVal) {
-    document.getElementById('scan-result-value').textContent = scannedValue;
-    document.getElementById('scan-result-box').classList.add('visible');
-    // Also sync other manual input
-    const other = document.getElementById('manual-serial-2');
-    if (other) other.value = val;
-    const c2 = document.getElementById('btn-confirm-2');
-    if (c2) c2.style.display = 'flex';
-  }
+function onManualInput(val){
+  scannedValue=val.trim().toUpperCase()||null;const hv=!!scannedValue;
+  document.getElementById('btn-confirm').style.display=hv?'flex':'none';
+  document.getElementById('btn-retry').style.display='none';
+  document.getElementById('scan-scanning-label').style.display=hv?'none':'flex';
+  if(hv){document.getElementById('scan-result-value').textContent=scannedValue;document.getElementById('scan-result-box').classList.add('visible');
+    const m2=document.getElementById('manual-serial-2');if(m2)m2.value=val;
+    const c2=document.getElementById('btn-confirm-2');if(c2)c2.style.display='flex';}
 }
-
-function confirmSerial() {
-  if (!scannedValue) return;
-  const fcu = rows.find(r => r._idx === currentFcuIdx);
-  if (!fcu) return;
-
-  const existing = fcu.serial;
-  fcu.serial = scannedValue;
-
-  stopScan();
-  renderList();
-
-  if (existing && existing !== scannedValue) {
-    showToast(`Serial updated: ${scannedValue}`, true);
-  } else {
-    showToast(`Saved: ${scannedValue}`, true);
-  }
-
-  // Auto-scroll to next unfilled
-  setTimeout(() => {
-    const nextEmpty = rows.find(r => !r.serial && r._idx !== currentFcuIdx);
-    // Could auto-open next — for now just stay on list
-  }, 300);
+function confirmSerial(){
+  if(!scannedValue)return;
+  const fcu=rows.find(r=>r._idx===currentFcuIdx);if(!fcu)return;
+  fcu.serial=scannedValue;stopScan();renderList();triggerAutosave();
+  showToast('Saved: '+scannedValue,true);
 }
-
-function stopScan() {
-  if (scanAnimFrame) { cancelAnimationFrame(scanAnimFrame); scanAnimFrame = null; }
-  if (scanStream) {
-    scanStream.getTracks().forEach(t => t.stop());
-    scanStream = null;
-  }
-  const video = document.getElementById('scan-video');
-  video.srcObject = null;
-  barcodeDetector = null;
+function stopScan(){
+  if(scanAnimFrame){cancelAnimationFrame(scanAnimFrame);scanAnimFrame=null;}
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
+  document.getElementById('scan-video').srcObject=null;barcodeDetector=null;
   showScreen('screen-list');
 }
 
-// ─── TOAST ────────────────────────────────────────────────────────────────
-let toastTimer;
-function showToast(msg, success = true) {
-  const toast = document.getElementById('toast');
-  toast.innerHTML = success
-    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ${msg}`
-    : msg;
-  toast.className = 'toast' + (success ? ' success' : '');
-  void toast.offsetWidth;
-  toast.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+// ── TOAST ──
+let tt;
+function showToast(msg,ok=true){
+  const t=document.getElementById('toast');
+  t.innerHTML=(ok?'<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ':'')+msg;
+  t.className='toast'+(ok?' success':'');void t.offsetWidth;t.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-// ─── DROP ZONE ───────────────────────────────────────────────────────────
-const dz = document.getElementById('drop-zone');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
-dz.addEventListener('drop', e => {
-  e.preventDefault(); dz.classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFileSelect(file);
-});
+// ── DROP ZONE ──
+const dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)handleFileSelect(f);});
 
-// ─── PWA / SERVICE WORKER ────────────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(console.error);
-}
-
-let deferredInstall;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredInstall = e;
-  const banner = document.getElementById('install-banner');
-  banner.classList.add('show');
-  document.getElementById('install-btn').onclick = async () => {
-    banner.classList.remove('show');
-    deferredInstall.prompt();
-    await deferredInstall.userChoice;
-    deferredInstall = null;
-  };
-});
+// ── PWA ──
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(console.error);
+let dii;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dii=e;document.getElementById('install-banner').classList.add('show');
+  document.getElementById('install-btn').onclick=async()=>{document.getElementById('install-banner').classList.remove('show');dii.prompt();await dii.userChoice;dii=null;};});
 </script>
 </body>
 </html>
