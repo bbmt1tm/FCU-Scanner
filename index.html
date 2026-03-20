@@ -176,15 +176,15 @@
     .manual-input:focus{outline:none;border-color:var(--accent)}
     .manual-input::placeholder{color:rgba(255,255,255,.2);font-size:12px;letter-spacing:0}
     .scan-unsupported{position:absolute;inset:0;z-index:15;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;gap:12px}
-    .zoom-indicator{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:8;pointer-events:none;opacity:0;transition:opacity .3s}
-    .zoom-indicator.show{opacity:1}
-    .zoom-badge{background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.25);color:#fff;font-family:var(--mono);font-size:16px;font-weight:700;padding:8px 16px;border-radius:100px;letter-spacing:.04em;white-space:nowrap}
-    .zoom-bar-wrap{position:absolute;bottom:calc(100% + 180px);left:16px;right:16px;z-index:8;display:flex;align-items:center;gap:10px;opacity:0;transition:opacity .3s;pointer-events:none}
-    .zoom-bar-wrap.show{opacity:1;pointer-events:all}
-    .zoom-bar{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,.25);outline:none;cursor:pointer}
-    .zoom-bar::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);border:2px solid #000;cursor:pointer}
-    .zoom-label{color:rgba(255,255,255,.7);font-family:var(--mono);font-size:12px;font-weight:700;white-space:nowrap;min-width:36px;text-align:right}
-    .zoom-reset{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;white-space:nowrap}
+    .zoom-controls{position:absolute;bottom:calc(100% + 8px);left:0;right:0;z-index:8;padding:0 14px;display:none;align-items:center;gap:10px}
+    .zoom-controls.show{display:flex}
+    .zoom-btn{width:36px;height:36px;flex-shrink:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:50%;color:#fff;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+    .zoom-btn:active{background:rgba(245,166,35,.7);border-color:var(--accent)}
+    .zoom-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,.25);outline:none;cursor:pointer;touch-action:manipulation}
+    .zoom-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--accent);border:2px solid #000;cursor:pointer}
+    .zoom-label{color:rgba(255,255,255,.8);font-family:var(--mono);font-size:12px;font-weight:700;min-width:34px;text-align:right}
+    .cam-switch-btn{position:absolute;top:14px;right:16px;z-index:11;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-family:var(--sans);font-size:12px;font-weight:600;padding:6px 10px;cursor:pointer;display:none;touch-action:manipulation}
+    .cam-switch-btn.show{display:block}
     .scan-unsupported.show{display:flex}
 
     /* ── SHARED ── */
@@ -344,13 +344,8 @@
       <div class="corner bl"></div><div class="corner br"></div>
       <div class="scan-line"></div>
     </div>
-    <div class="zoom-indicator" id="zoom-indicator"><div class="zoom-badge" id="zoom-badge">1.0×</div></div>
   </div>
-  <div class="zoom-bar-wrap" id="zoom-bar-wrap">
-    <button class="zoom-reset" onclick="setZoom(zoomMin)">1×</button>
-    <input class="zoom-bar" id="zoom-bar" type="range" min="0" max="1" step="0.01" value="0" oninput="onZoomSlider(this.value)">
-    <span class="zoom-label" id="zoom-label">1.0×</span>
-  </div>
+  <button class="cam-switch-btn" id="cam-switch-btn" onclick="switchCamera()">📷 Switch lens</button>
 
   <div class="scan-header">
     <button class="scan-back" onclick="stopScan()">
@@ -385,6 +380,12 @@
       <div id="scan-scanning-label" style="flex:1;display:flex;align-items:center;justify-content:center">
         <span style="color:rgba(255,255,255,.5);font-size:14px">Scanning…</span>
       </div>
+    </div>
+    <div class="zoom-controls" id="zoom-controls">
+      <button class="zoom-btn" ontouchend="zoomStep(-1)" onclick="zoomStep(-1)">−</button>
+      <input class="zoom-slider" id="zoom-slider" type="range" min="0" max="1" step="0.01" value="0" oninput="onZoomSlider(this.value)">
+      <button class="zoom-btn" ontouchend="zoomStep(1)" onclick="zoomStep(1)">+</button>
+      <span class="zoom-label" id="zoom-label">1×</span>
     </div>
     <div class="manual-input-wrap">
       <input class="manual-input" id="manual-serial" type="text" placeholder="Or type serial manually" oninput="onManualInput(this.value)">
@@ -885,7 +886,8 @@ async function startScan(idx){
     const s=await navigator.mediaDevices.getUserMedia(c);scanStream=s;
     const v=document.getElementById('scan-video');v.srcObject=s;await v.play();
     barcodeDetector=new BarcodeDetector({formats:['code_128','code_39','data_matrix']});
-    initZoom(s);initPinch(document.getElementById('scan-video'));
+    initZoom(s);
+    enumerateCameras();
     scanLoop();
   };
   try{await startCam({video:{facingMode:{exact:'environment'},width:{ideal:1920},height:{ideal:1080}}});}
@@ -983,89 +985,94 @@ function doSaveSerial(){
   fcu.serial=scannedValue;stopScan();renderList();triggerAutosave();
   showToast('Saved: '+scannedValue,true);
 }
-// ── ZOOM ──
+// ── ZOOM + CAMERA SWITCHING ──
 let zoomMin=1, zoomMax=1, zoomCurrent=1, zoomSupported=false;
-let pinchStartDist=0, pinchStartZoom=1;
-let zoomHideTimer=null;
+let availableCameras=[], currentCamIdx=0;
+
+async function enumerateCameras(){
+  try{
+    const devices=await navigator.mediaDevices.enumerateDevices();
+    availableCameras=devices.filter(d=>d.kind==='videoinput'&&(d.label.toLowerCase().includes('back')||d.label.toLowerCase().includes('rear')||d.label===''||availableCameras.length===0));
+    // If no labelled back cameras found, take all video inputs
+    if(!availableCameras.length) availableCameras=devices.filter(d=>d.kind==='videoinput');
+    const btn=document.getElementById('cam-switch-btn');
+    if(availableCameras.length>1){btn.classList.add('show');btn.textContent='📷 Lens '+(currentCamIdx+1)+'/'+availableCameras.length;}
+    else{btn.classList.remove('show');}
+  }catch(e){}
+}
+
+async function switchCamera(){
+  if(availableCameras.length<2)return;
+  currentCamIdx=(currentCamIdx+1)%availableCameras.length;
+  const btn=document.getElementById('cam-switch-btn');
+  btn.textContent='📷 Lens '+(currentCamIdx+1)+'/'+availableCameras.length;
+  // Stop current stream and restart with new camera
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
+  if(scanAnimFrame){cancelAnimationFrame(scanAnimFrame);scanAnimFrame=null;}
+  try{
+    const cam=availableCameras[currentCamIdx];
+    const constraints={video:{deviceId:{exact:cam.deviceId},width:{ideal:1920},height:{ideal:1080}}};
+    const s=await navigator.mediaDevices.getUserMedia(constraints);
+    scanStream=s;
+    const v=document.getElementById('scan-video');
+    v.srcObject=s; await v.play();
+    initZoom(s);
+    scanLoop();
+  }catch(e){showToast('Could not switch camera',false);}
+}
 
 function initZoom(stream){
   const track=stream.getVideoTracks()[0];
-  const cap=track.getCapabilities?track.getCapabilities():{};
-  if(cap.zoom){
-    zoomSupported=true;
-    zoomMin=cap.zoom.min||1;
-    zoomMax=cap.zoom.max||1;
-    zoomCurrent=zoomMin;
-    const bar=document.getElementById('zoom-bar');
-    bar.min=0; bar.max=1; bar.value=0;
-    document.getElementById('zoom-bar-wrap').classList.add('show');
-    updateZoomLabel();
-  } else {
-    zoomSupported=false;
-    document.getElementById('zoom-bar-wrap').classList.remove('show');
-  }
+  // Small delay — capabilities not always ready immediately after stream starts
+  setTimeout(()=>{
+    const cap=track.getCapabilities?track.getCapabilities():{};
+    if(cap.zoom&&cap.zoom.max>cap.zoom.min+0.1){
+      zoomSupported=true;
+      zoomMin=cap.zoom.min||1;
+      zoomMax=cap.zoom.max||1;
+      zoomCurrent=zoomMin;
+      document.getElementById('zoom-slider').value=0;
+      document.getElementById('zoom-controls').classList.add('show');
+      updateZoomLabel();
+    }else{
+      zoomSupported=false;
+      document.getElementById('zoom-controls').classList.remove('show');
+    }
+  },500);
 }
 
-function setZoom(val){
-  if(!zoomSupported||!scanStream)return;
-  zoomCurrent=Math.min(zoomMax, Math.max(zoomMin, val));
-  const track=scanStream.getVideoTracks()[0];
-  track.applyConstraints({advanced:[{zoom:zoomCurrent}]}).catch(()=>{});
-  // Update slider position
-  const pct=(zoomCurrent-zoomMin)/(zoomMax-zoomMin)||0;
-  document.getElementById('zoom-bar').value=pct;
-  updateZoomLabel();
-  showZoomIndicator();
+function zoomStep(dir){
+  if(!zoomSupported)return;
+  const step=(zoomMax-zoomMin)/8;
+  applyZoom(zoomCurrent+(dir*step));
 }
 
 function onZoomSlider(pct){
-  const val=zoomMin+(zoomMax-zoomMin)*parseFloat(pct);
-  setZoom(val);
+  applyZoom(zoomMin+(zoomMax-zoomMin)*parseFloat(pct));
+}
+
+function applyZoom(val){
+  if(!zoomSupported||!scanStream)return;
+  zoomCurrent=Math.min(zoomMax,Math.max(zoomMin,val));
+  const track=scanStream.getVideoTracks()[0];
+  track.applyConstraints({advanced:[{zoom:zoomCurrent}]}).catch(()=>{});
+  const pct=(zoomCurrent-zoomMin)/(zoomMax-zoomMin)||0;
+  document.getElementById('zoom-slider').value=pct;
+  updateZoomLabel();
 }
 
 function updateZoomLabel(){
-  const txt=zoomCurrent.toFixed(1)+'×';
-  document.getElementById('zoom-badge').textContent=txt;
-  document.getElementById('zoom-label').textContent=txt;
-}
-
-function showZoomIndicator(){
-  const ind=document.getElementById('zoom-indicator');
-  ind.classList.add('show');
-  clearTimeout(zoomHideTimer);
-  zoomHideTimer=setTimeout(()=>ind.classList.remove('show'),1200);
+  document.getElementById('zoom-label').textContent=zoomCurrent.toFixed(1)+'×';
 }
 
 function resetZoom(){
   zoomMin=1;zoomMax=1;zoomCurrent=1;zoomSupported=false;
-  document.getElementById('zoom-bar-wrap').classList.remove('show');
-  document.getElementById('zoom-indicator').classList.remove('show');
+  document.getElementById('zoom-controls').classList.remove('show');
+  document.getElementById('cam-switch-btn').classList.remove('show');
 }
 
-// Pinch gesture on video element
 function initPinch(el){
-  el.addEventListener('touchstart',e=>{
-    if(e.touches.length===2){
-      e.preventDefault();
-      pinchStartDist=Math.hypot(
-        e.touches[0].clientX-e.touches[1].clientX,
-        e.touches[0].clientY-e.touches[1].clientY
-      );
-      pinchStartZoom=zoomCurrent;
-    }
-  },{passive:false});
-
-  el.addEventListener('touchmove',e=>{
-    if(e.touches.length===2&&zoomSupported){
-      e.preventDefault();
-      const dist=Math.hypot(
-        e.touches[0].clientX-e.touches[1].clientX,
-        e.touches[0].clientY-e.touches[1].clientY
-      );
-      const scale=dist/pinchStartDist;
-      setZoom(pinchStartZoom*scale);
-    }
-  },{passive:false});
+  // No-op — pinch caused button blocking issues; use slider/buttons instead
 }
 
 function stopScan(){
