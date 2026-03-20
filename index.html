@@ -244,13 +244,13 @@
     </svg>
     <h2>Load Spreadsheet</h2>
     <p>Tap to select .csv or .xlsx file</p>
-    <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(this.files[0])">
+    <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(this.files[0]);this.value=''">
   </div>
 
   <button class="load-secondary-btn" onclick="document.getElementById('progress-file-input').click()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     Load saved progress file (.fcusave)
-    <input type="file" id="progress-file-input" accept=".fcusave,.json" onchange="loadProgressFile(this.files[0])">
+    <input type="file" id="progress-file-input" accept=".fcusave,.json" onchange="loadProgressFile(this.files[0]);this.value=''">
   </button>
   <button class="load-secondary-btn" onclick="loadDemoData()">Load demo data (testing)</button>
 </div>
@@ -678,7 +678,9 @@ function exportFile(){
     const sheetRows=rows.filter(r=>r._sheetName===sheet.name);
     const data=[sheet.headers,...sheet.rows.map(r=>[...r])];// deep copy
     sheetRows.forEach(r=>{
-      if(r._sheetRow+1<data.length) data[r._sheetRow+1][colMap.serial]=r.serial;
+      // Use per-row serial column index so different sheet structures work correctly
+      const serCol=r._serCol!==undefined?r._serCol:colMap.serial;
+      if(r._sheetRow+1<data.length) data[r._sheetRow+1][serCol]=r.serial;
     });
     const ws=XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb,ws,sheet.name);
