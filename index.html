@@ -886,18 +886,42 @@ async function startScan(idx){
     const s=await navigator.mediaDevices.getUserMedia(c);scanStream=s;
     const v=document.getElementById('scan-video');v.srcObject=s;await v.play();
     barcodeDetector=new BarcodeDetector({formats:['code_128','code_39','data_matrix']});
+    // Init ImageCapture for full-res frame grabbing if supported
+    try{
+      const track=s.getVideoTracks()[0];
+      imageCapture=('ImageCapture' in window)?new ImageCapture(track):null;
+    }catch(e){imageCapture=null;}
     initZoom(s);
     enumerateCameras();
     scanLoop();
   };
-  try{await startCam({video:{facingMode:{exact:'environment'},width:{ideal:1920},height:{ideal:1080}}});}
-  catch(e){try{await startCam({video:{facingMode:'environment'}});}catch(e2){document.getElementById('scan-unsupported').classList.add('show');}}
+  // zoom:true hint tells Android to expose full zoom range including lens switching
+  // 4K ideal resolution gives BarcodeDetector more pixels to work with at distance
+  try{await startCam({video:{facingMode:{exact:'environment'},width:{ideal:3840},height:{ideal:2160},zoom:true}});}
+  catch(e){try{await startCam({video:{facingMode:'environment'},width:{ideal:1920},height:{ideal:1080},zoom:true});}catch(e2){document.getElementById('scan-unsupported').classList.add('show');}}
 }
+let imageCapture=null;
+
 async function scanLoop(){
   if(!scanStream||!barcodeDetector)return;
   const v=document.getElementById('scan-video');
   if(v.readyState<2){scanAnimFrame=requestAnimationFrame(scanLoop);return;}
-  try{const bc=await barcodeDetector.detect(v);if(bc.length>0){onDetected(bc[0].rawValue.trim().toUpperCase());return;}}catch(e){}
+  try{
+    // Use ImageCapture.grabFrame() when available — gives full sensor resolution
+    // frame instead of compressed video stream, far better for distance scanning
+    let source=v;
+    if(imageCapture){
+      try{
+        const bitmap=await imageCapture.grabFrame();
+        source=bitmap;
+      }catch(e){
+        // grabFrame failed (some devices), fall back to video element
+        source=v;
+      }
+    }
+    const bc=await barcodeDetector.detect(source);
+    if(bc.length>0){onDetected(bc[0].rawValue.trim().toUpperCase());return;}
+  }catch(e){}
   scanAnimFrame=requestAnimationFrame(scanLoop);
 }
 function looksLikeSiemensSerial(val){
@@ -1009,13 +1033,15 @@ async function switchCamera(){
   // Stop current stream and restart with new camera
   if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
   if(scanAnimFrame){cancelAnimationFrame(scanAnimFrame);scanAnimFrame=null;}
+  imageCapture=null;
   try{
     const cam=availableCameras[currentCamIdx];
-    const constraints={video:{deviceId:{exact:cam.deviceId},width:{ideal:1920},height:{ideal:1080}}};
+    const constraints={video:{deviceId:{exact:cam.deviceId},width:{ideal:3840},height:{ideal:2160},zoom:true}};
     const s=await navigator.mediaDevices.getUserMedia(constraints);
     scanStream=s;
     const v=document.getElementById('scan-video');
     v.srcObject=s; await v.play();
+    try{const track=s.getVideoTracks()[0];imageCapture=('ImageCapture' in window)?new ImageCapture(track):null;}catch(e){imageCapture=null;}
     initZoom(s);
     scanLoop();
   }catch(e){showToast('Could not switch camera',false);}
