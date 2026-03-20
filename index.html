@@ -942,8 +942,9 @@ function confirmClearSerial(){
   document.getElementById('clear-modal').classList.remove('show');
   document.getElementById('scan-existing-box').style.display='none';
   triggerAutosave();
-  stopScan();
-  showToast('Serial cleared',false);
+  renderList();  // update list in background so it's correct when user returns
+  retryScanning();  // stay on scan screen, ready for new scan
+  showToast('Serial cleared — ready to scan',true);
 }
 function closeReplaceModal(){document.getElementById('replace-modal').classList.remove('show');}
 function forceReplaceSerial(){
