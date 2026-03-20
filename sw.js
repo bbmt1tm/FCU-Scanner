@@ -1,4 +1,4 @@
-const CACHE = 'fcu-scanner-v1';
+const CACHE = 'fcu-scanner-v1.1';
 const ASSETS = [
   './',
   './index.html',
