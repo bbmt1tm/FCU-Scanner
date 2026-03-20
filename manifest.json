@@ -1,0 +1,22 @@
+{
+  "name": "FCU Scanner",
+  "short_name": "FCU Scanner",
+  "description": "DXR2 Serial Number Barcode Capture",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#111214",
+  "theme_color": "#111214",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%23111214'/><rect x='20' y='56' width='16' height='80' rx='4' fill='%23f5a623'/><rect x='44' y='56' width='8' height='80' rx='2' fill='%23f5a623'/><rect x='60' y='56' width='16' height='80' rx='4' fill='%23f5a623'/><rect x='84' y='56' width='8' height='80' rx='2' fill='%23f5a623'/><rect x='100' y='56' width='24' height='80' rx='4' fill='%23f5a623'/><rect x='132' y='56' width='8' height='80' rx='2' fill='%23f5a623'/><rect x='148' y='56' width='8' height='80' rx='4' fill='%23f5a623'/><rect x='164' y='56' width='8' height='80' rx='2' fill='%23f5a623'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%23111214'/><rect x='48' y='140' width='40' height='232' rx='8' fill='%23f5a623'/><rect x='104' y='140' width='22' height='232' rx='4' fill='%23f5a623'/><rect x='140' y='140' width='40' height='232' rx='8' fill='%23f5a623'/><rect x='200' y='140' width='22' height='232' rx='4' fill='%23f5a623'/><rect x='240' y='140' width='60' height='232' rx='8' fill='%23f5a623'/><rect x='320' y='140' width='22' height='232' rx='4' fill='%23f5a623'/><rect x='360' y='140' width='40' height='232' rx='8' fill='%23f5a623'/><rect x='420' y='140' width='44' height='232' rx='4' fill='%23f5a623'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
