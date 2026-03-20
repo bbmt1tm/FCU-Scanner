@@ -949,6 +949,15 @@ function confirmClearSerial(){
 function closeReplaceModal(){document.getElementById('replace-modal').classList.remove('show');}
 function forceReplaceSerial(){
   document.getElementById('replace-modal').classList.remove('show');
+  // Still need to run duplicate check even when replacing
+  const dupes=rows.filter(r=>r._idx!==currentFcuIdx&&r.serial&&r.serial.toUpperCase()===scannedValue.toUpperCase());
+  if(dupes.length>0){
+    const dupeList=dupes.map(r=>'<strong style="color:var(--accent);font-family:var(--mono)">'+(r.floor?r.floor+' · ':'')+r.fcuRef+'</strong>').join('<br>');
+    document.getElementById('dupe-message').innerHTML=
+      'Serial <span style="font-family:var(--mono);color:var(--accent)">'+scannedValue+'</span> is already assigned to:<br><br>'+dupeList+'<br><br>This may mean the wrong controller was scanned.';
+    document.getElementById('dupe-modal').classList.add('show');
+    return;
+  }
   doSaveSerial();
 }
 
