@@ -22,7 +22,7 @@
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
     #app{height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
-    .screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .22s ease;overflow:hidden}
+    .screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .22s ease}
     .screen.active{opacity:1;pointer-events:all}
 
     /* ── LOAD ── */
@@ -139,9 +139,9 @@
     .empty-state svg{width:38px;height:38px;opacity:.4}
 
     /* ── SCAN ── */
-    #screen-scan{background:#000}
-    .scan-header{position:absolute;top:0;left:0;right:0;z-index:10;padding:14px 16px;background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);touch-action:manipulation}
-    .scan-back{background:rgba(255,255,255,.12);border:none;color:#fff;font-family:var(--sans);font-size:14px;font-weight:600;padding:8px 14px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:6px;touch-action:manipulation}
+    #screen-scan{background:#000;position:relative}
+    .scan-header{position:absolute;top:0;left:0;right:0;z-index:12;padding:14px 16px;background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);touch-action:manipulation;pointer-events:all}
+    .scan-back{background:rgba(255,255,255,.12);border:none;color:#fff;font-family:var(--sans);font-size:14px;font-weight:600;padding:8px 14px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:6px;touch-action:manipulation;pointer-events:all;position:relative;z-index:13}
     .scan-back svg{width:16px;height:16px}
     .scan-fcu-info{margin-top:10px;background:rgba(0,0,0,.6);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:10px 14px}
     .scan-fcu-ref{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent)}
@@ -159,14 +159,14 @@
     .scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--accent),transparent);animation:scanline 1.8s ease-in-out infinite;border-radius:1px;box-shadow:0 0 8px var(--accent-glow)}
     @keyframes scanline{0%{top:15%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:85%;opacity:0}}
     .scan-hint{position:absolute;bottom:185px;left:0;right:0;text-align:center;z-index:5;color:rgba(255,255,255,.7);font-size:13px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
-    .scan-footer{position:absolute;bottom:0;left:0;right:0;z-index:10;padding:14px 14px 30px;background:linear-gradient(to top,rgba(0,0,0,.95),transparent);touch-action:manipulation}
+    .scan-footer{position:absolute;bottom:0;left:0;right:0;z-index:12;padding:14px 14px 30px;background:linear-gradient(to top,rgba(0,0,0,.95),transparent);touch-action:manipulation;pointer-events:all}
     .scan-result-box{background:rgba(17,18,20,.9);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:10px;display:none}
     .scan-result-box.visible{display:block}
     .scan-result-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
     .scan-result-value{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);letter-spacing:.08em}
     .scan-actions{display:flex;gap:10px;margin-bottom:10px}
     .btn-retry{flex:0 0 auto;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;padding:14px 18px;border-radius:var(--radius);cursor:pointer;touch-action:manipulation}
-    .btn-confirm{flex:1;background:var(--accent);border:none;color:#000;font-family:var(--sans);font-size:16px;font-weight:700;padding:14px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;touch-action:manipulation}
+    .btn-confirm{flex:1;background:var(--accent);border:none;color:#000;font-family:var(--sans);font-size:16px;font-weight:700;padding:14px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;touch-action:manipulation;pointer-events:all;position:relative;z-index:13}
     .btn-confirm svg{width:17px;height:17px}
     .scan-flash{position:absolute;inset:0;z-index:20;background:rgba(34,197,94,.25);pointer-events:none;opacity:0}
     .scan-flash.flash{animation:flashAnim .5s ease-out forwards}
@@ -1016,20 +1016,80 @@ let availableCameras=[], currentCamIdx=0;
 async function enumerateCameras(){
   try{
     const devices=await navigator.mediaDevices.enumerateDevices();
-    availableCameras=devices.filter(d=>d.kind==='videoinput'&&(d.label.toLowerCase().includes('back')||d.label.toLowerCase().includes('rear')||d.label===''||availableCameras.length===0));
-    // If no labelled back cameras found, take all video inputs
-    if(!availableCameras.length) availableCameras=devices.filter(d=>d.kind==='videoinput');
+    const allCams=devices.filter(d=>d.kind==='videoinput');
+
+    // Words that definitively identify a front/selfie camera
+    const frontWords=['front','selfie','user','facetime','facing front'];
+    const isFront=label=>{const l=label.toLowerCase();return frontWords.some(w=>l.includes(w));};
+
+    // Words that positively identify a back camera
+    const backWords=['back','rear','environment','main','wide','tele','ultra','periscope','zoom'];
+    const isBack=label=>{const l=label.toLowerCase();return backWords.some(w=>l.includes(w));};
+
+    // Strategy:
+    // 1. If any cameras have labels, use them to separate front from back
+    // 2. Fall back: check facingMode from the currently running stream
+    // 3. Last resort: exclude the first camera (usually front on Samsung) if >1 exist
+
+    const labelled=allCams.filter(d=>d.label);
+    if(labelled.length>0){
+      // We have labels — exclude anything positively identified as front
+      const backCams=allCams.filter(d=>!isFront(d.label));
+      // Further prefer cameras positively identified as back if we have them
+      const positiveBack=backCams.filter(d=>isBack(d.label));
+      availableCameras=positiveBack.length>0?positiveBack:backCams;
+    } else {
+      // No labels yet (permission not fully granted) — use facingMode of current stream
+      // to identify and exclude the front camera after the fact
+      availableCameras=allCams;
+    }
+
+    // Double-check: remove the camera currently active if it turned out to be front-facing
+    if(scanStream){
+      const activeTrack=scanStream.getVideoTracks()[0];
+      const settings=activeTrack?activeTrack.getSettings():{};
+      if(settings.facingMode==='user'){
+        // Current camera is front-facing — find and remove it from list
+        const activeDeviceId=settings.deviceId;
+        const filtered=availableCameras.filter(d=>d.deviceId!==activeDeviceId);
+        if(filtered.length>0) availableCameras=filtered;
+      }
+      // Set currentCamIdx to the currently active camera
+      const activeDeviceId=settings.deviceId;
+      const activeIdx=availableCameras.findIndex(d=>d.deviceId===activeDeviceId);
+      if(activeIdx>=0) currentCamIdx=activeIdx;
+    }
+
     const btn=document.getElementById('cam-switch-btn');
-    if(availableCameras.length>1){btn.classList.add('show');btn.textContent='📷 Lens '+(currentCamIdx+1)+'/'+availableCameras.length;}
-    else{btn.classList.remove('show');}
-  }catch(e){}
+    if(availableCameras.length>1){
+      btn.classList.add('show');
+      updateLensLabel();
+    } else {
+      btn.classList.remove('show');
+    }
+  }catch(e){console.log('enumerateCameras error:',e);}
+}
+
+function updateLensLabel(){
+  const btn=document.getElementById('cam-switch-btn');
+  const cam=availableCameras[currentCamIdx];
+  // Show a useful label if we have one, otherwise just the index
+  let label='📷 ';
+  if(cam&&cam.label){
+    // Shorten long Samsung-style labels
+    const l=cam.label.replace(/back /i,'').replace(/camera/i,'').replace(/\s+/g,' ').trim();
+    label+=l.length>12?l.substring(0,12)+'…':l;
+  } else {
+    label+='Lens '+(currentCamIdx+1)+'/'+availableCameras.length;
+  }
+  btn.textContent=label;
 }
 
 async function switchCamera(){
   if(availableCameras.length<2)return;
   currentCamIdx=(currentCamIdx+1)%availableCameras.length;
   const btn=document.getElementById('cam-switch-btn');
-  btn.textContent='📷 Lens '+(currentCamIdx+1)+'/'+availableCameras.length;
+  updateLensLabel();
   // Stop current stream and restart with new camera
   if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
   if(scanAnimFrame){cancelAnimationFrame(scanAnimFrame);scanAnimFrame=null;}
