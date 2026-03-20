@@ -1,7 +1,9 @@
-const CACHE = 'fcu-scanner-v1.4';
+importScripts('version.js');
+const CACHE = 'fcu-scanner-' + APP_VERSION;
 const ASSETS = [
   './',
   './index.html',
+  './version.js',
   'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',
   'https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow:wght@300;400;500;600;700&display=swap'
 ];
