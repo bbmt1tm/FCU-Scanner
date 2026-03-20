@@ -886,42 +886,18 @@ async function startScan(idx){
     const s=await navigator.mediaDevices.getUserMedia(c);scanStream=s;
     const v=document.getElementById('scan-video');v.srcObject=s;await v.play();
     barcodeDetector=new BarcodeDetector({formats:['code_128','code_39','data_matrix']});
-    // Init ImageCapture for full-res frame grabbing if supported
-    try{
-      const track=s.getVideoTracks()[0];
-      imageCapture=('ImageCapture' in window)?new ImageCapture(track):null;
-    }catch(e){imageCapture=null;}
     initZoom(s);
     enumerateCameras();
     scanLoop();
   };
-  // zoom:true hint tells Android to expose full zoom range including lens switching
-  // 4K ideal resolution gives BarcodeDetector more pixels to work with at distance
-  try{await startCam({video:{facingMode:{exact:'environment'},width:{ideal:3840},height:{ideal:2160},zoom:true}});}
-  catch(e){try{await startCam({video:{facingMode:'environment'},width:{ideal:1920},height:{ideal:1080},zoom:true});}catch(e2){document.getElementById('scan-unsupported').classList.add('show');}}
+  try{await startCam({video:{facingMode:{exact:'environment'},width:{ideal:1920},height:{ideal:1080}}});}
+  catch(e){try{await startCam({video:{facingMode:'environment'}});}catch(e2){document.getElementById('scan-unsupported').classList.add('show');}}
 }
-let imageCapture=null;
-
 async function scanLoop(){
   if(!scanStream||!barcodeDetector)return;
   const v=document.getElementById('scan-video');
   if(v.readyState<2){scanAnimFrame=requestAnimationFrame(scanLoop);return;}
-  try{
-    // Use ImageCapture.grabFrame() when available — gives full sensor resolution
-    // frame instead of compressed video stream, far better for distance scanning
-    let source=v;
-    if(imageCapture){
-      try{
-        const bitmap=await imageCapture.grabFrame();
-        source=bitmap;
-      }catch(e){
-        // grabFrame failed (some devices), fall back to video element
-        source=v;
-      }
-    }
-    const bc=await barcodeDetector.detect(source);
-    if(bc.length>0){onDetected(bc[0].rawValue.trim().toUpperCase());return;}
-  }catch(e){}
+  try{const bc=await barcodeDetector.detect(v);if(bc.length>0){onDetected(bc[0].rawValue.trim().toUpperCase());return;}}catch(e){}
   scanAnimFrame=requestAnimationFrame(scanLoop);
 }
 function looksLikeSiemensSerial(val){
@@ -1016,92 +992,30 @@ let availableCameras=[], currentCamIdx=0;
 async function enumerateCameras(){
   try{
     const devices=await navigator.mediaDevices.enumerateDevices();
-    const allCams=devices.filter(d=>d.kind==='videoinput');
-
-    // Words that definitively identify a front/selfie camera
-    const frontWords=['front','selfie','user','facetime','facing front'];
-    const isFront=label=>{const l=label.toLowerCase();return frontWords.some(w=>l.includes(w));};
-
-    // Words that positively identify a back camera
-    const backWords=['back','rear','environment','main','wide','tele','ultra','periscope','zoom'];
-    const isBack=label=>{const l=label.toLowerCase();return backWords.some(w=>l.includes(w));};
-
-    // Strategy:
-    // 1. If any cameras have labels, use them to separate front from back
-    // 2. Fall back: check facingMode from the currently running stream
-    // 3. Last resort: exclude the first camera (usually front on Samsung) if >1 exist
-
-    const labelled=allCams.filter(d=>d.label);
-    if(labelled.length>0){
-      // We have labels — exclude anything positively identified as front
-      const backCams=allCams.filter(d=>!isFront(d.label));
-      // Further prefer cameras positively identified as back if we have them
-      const positiveBack=backCams.filter(d=>isBack(d.label));
-      availableCameras=positiveBack.length>0?positiveBack:backCams;
-    } else {
-      // No labels yet (permission not fully granted) — use facingMode of current stream
-      // to identify and exclude the front camera after the fact
-      availableCameras=allCams;
-    }
-
-    // Double-check: remove the camera currently active if it turned out to be front-facing
-    if(scanStream){
-      const activeTrack=scanStream.getVideoTracks()[0];
-      const settings=activeTrack?activeTrack.getSettings():{};
-      if(settings.facingMode==='user'){
-        // Current camera is front-facing — find and remove it from list
-        const activeDeviceId=settings.deviceId;
-        const filtered=availableCameras.filter(d=>d.deviceId!==activeDeviceId);
-        if(filtered.length>0) availableCameras=filtered;
-      }
-      // Set currentCamIdx to the currently active camera
-      const activeDeviceId=settings.deviceId;
-      const activeIdx=availableCameras.findIndex(d=>d.deviceId===activeDeviceId);
-      if(activeIdx>=0) currentCamIdx=activeIdx;
-    }
-
+    availableCameras=devices.filter(d=>d.kind==='videoinput'&&(d.label.toLowerCase().includes('back')||d.label.toLowerCase().includes('rear')||d.label===''||availableCameras.length===0));
+    // If no labelled back cameras found, take all video inputs
+    if(!availableCameras.length) availableCameras=devices.filter(d=>d.kind==='videoinput');
     const btn=document.getElementById('cam-switch-btn');
-    if(availableCameras.length>1){
-      btn.classList.add('show');
-      updateLensLabel();
-    } else {
-      btn.classList.remove('show');
-    }
-  }catch(e){console.log('enumerateCameras error:',e);}
-}
-
-function updateLensLabel(){
-  const btn=document.getElementById('cam-switch-btn');
-  const cam=availableCameras[currentCamIdx];
-  // Show a useful label if we have one, otherwise just the index
-  let label='📷 ';
-  if(cam&&cam.label){
-    // Shorten long Samsung-style labels
-    const l=cam.label.replace(/back /i,'').replace(/camera/i,'').replace(/\s+/g,' ').trim();
-    label+=l.length>12?l.substring(0,12)+'…':l;
-  } else {
-    label+='Lens '+(currentCamIdx+1)+'/'+availableCameras.length;
-  }
-  btn.textContent=label;
+    if(availableCameras.length>1){btn.classList.add('show');btn.textContent='📷 Lens '+(currentCamIdx+1)+'/'+availableCameras.length;}
+    else{btn.classList.remove('show');}
+  }catch(e){}
 }
 
 async function switchCamera(){
   if(availableCameras.length<2)return;
   currentCamIdx=(currentCamIdx+1)%availableCameras.length;
   const btn=document.getElementById('cam-switch-btn');
-  updateLensLabel();
+  btn.textContent='📷 Lens '+(currentCamIdx+1)+'/'+availableCameras.length;
   // Stop current stream and restart with new camera
   if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
   if(scanAnimFrame){cancelAnimationFrame(scanAnimFrame);scanAnimFrame=null;}
-  imageCapture=null;
   try{
     const cam=availableCameras[currentCamIdx];
-    const constraints={video:{deviceId:{exact:cam.deviceId},width:{ideal:3840},height:{ideal:2160},zoom:true}};
+    const constraints={video:{deviceId:{exact:cam.deviceId},width:{ideal:1920},height:{ideal:1080}}};
     const s=await navigator.mediaDevices.getUserMedia(constraints);
     scanStream=s;
     const v=document.getElementById('scan-video');
     v.srcObject=s; await v.play();
-    try{const track=s.getVideoTracks()[0];imageCapture=('ImageCapture' in window)?new ImageCapture(track):null;}catch(e){imageCapture=null;}
     initZoom(s);
     scanLoop();
   }catch(e){showToast('Could not switch camera',false);}
