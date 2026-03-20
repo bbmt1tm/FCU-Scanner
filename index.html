@@ -486,8 +486,6 @@ let rows=[], sheetData=[], colMap={fcu:0,location:1,serial:2};
 let originalFileName='FCU_Serials', originalFormat='xlsx';
 let activeFloor='ALL', currentFcuIdx=null;
 let scanStream=null, scanAnimFrame=null, barcodeDetector=null, scannedValue=null;
-let zoomMin=1, zoomMax=1, zoomCurrent=1, zoomStep_size=0.5;
-let pinchStartDist=0, pinchStartZoom=1;
 let autosaveTimeout=null, lastSavedTime=null;
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
@@ -1135,75 +1133,6 @@ function forceReplaceSerial(){
     return;
   }
   doSaveSerial();
-}
-
-// ── ZOOM ──
-function initZoom(stream){
-  zoomCurrent=1;
-  const track=stream.getVideoTracks()[0];
-  if(!track)return;
-  const caps=track.getCapabilities();
-  if(!caps||!caps.zoom){
-    document.getElementById('zoom-bar').classList.remove('show');
-    return;
-  }
-  zoomMin=caps.zoom.min||1;
-  zoomMax=caps.zoom.max||1;
-  if(zoomMax<=zoomMin+0.1){document.getElementById('zoom-bar').classList.remove('show');return;}
-  // Step size: aim for ~6 usable steps across the range
-  zoomStep_size=Math.max(0.25, Math.round((zoomMax-zoomMin)/6 * 4)/4);
-  zoomCurrent=zoomMin;
-  document.getElementById('zoom-bar').classList.add('show');
-  updateZoomUI();
-  // Pinch-to-zoom on video element
-  const video=document.getElementById('scan-video');
-  video.addEventListener('touchstart',onPinchStart,{passive:true});
-  video.addEventListener('touchmove',onPinchMove,{passive:true});
-}
-
-function pinchDist(touches){
-  const dx=touches[0].clientX-touches[1].clientX;
-  const dy=touches[0].clientY-touches[1].clientY;
-  return Math.sqrt(dx*dx+dy*dy);
-}
-
-function onPinchStart(e){
-  if(e.touches.length===2){
-    pinchStartDist=pinchDist(e.touches);
-    pinchStartZoom=zoomCurrent;
-  }
-}
-
-function onPinchMove(e){
-  if(e.touches.length!==2)return;
-  const dist=pinchDist(e.touches);
-  const scale=dist/pinchStartDist;
-  const newZoom=Math.min(zoomMax,Math.max(zoomMin,pinchStartZoom*scale));
-  applyZoom(newZoom);
-}
-
-
-function applyZoom(val){
-  if(!scanStream)return;
-  const track=scanStream.getVideoTracks()[0];
-  if(!track)return;
-  zoomCurrent=val;
-  track.applyConstraints({advanced:[{zoom:val}]}).catch(()=>{});
-  updateZoomUI();
-}
-
-function updateZoomUI(){
-  document.getElementById('zoom-level').textContent=zoomCurrent.toFixed(1)+'×';
-  document.getElementById('zoom-in-btn').style.opacity=zoomCurrent>=zoomMax?'0.3':'1';
-  document.getElementById('zoom-out-btn').style.opacity=zoomCurrent<=zoomMin?'0.3':'1';
-}
-
-function cleanupZoom(){
-  zoomCurrent=1;
-  const video=document.getElementById('scan-video');
-  video.removeEventListener('touchstart',onPinchStart);
-  video.removeEventListener('touchmove',onPinchMove);
-  document.getElementById('zoom-bar').classList.remove('show');
 }
 
 // ── DROP ZONE ──
