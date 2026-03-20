@@ -19,7 +19,7 @@ FIRST TIME SETUP
 
 ON SAMSUNG INTERNET (Samsung phones):
 1. Open Samsung Internet on your phone
-2. Go to:  https://[your-github-username].github.io/fcu-scanner
+2. Go to:  https://bbmt1tm.github.io/FCU-Scanner/
 3. The app will load and cache itself for offline use
 4. To install to home screen:
    - Tap the three-line menu button (bottom right)
@@ -30,7 +30,7 @@ ON SAMSUNG INTERNET (Samsung phones):
 
 ON CHROME (Android):
 1. Open Chrome on your phone
-2. Go to:  https://[your-github-username].github.io/fcu-scanner
+2. Go to:  https://bbmt1tm.github.io/FCU-Scanner/
 3. The app will load and cache itself for offline use
 4. To install to home screen:
    - A banner may appear at the bottom saying "Install FCU Scanner"
@@ -226,7 +226,7 @@ TROUBLESHOOTING
 App not updating after a new version is deployed:
 - Close the browser completely (swipe away from recents)
 - Reopen and reload the page
-- Or go to: [your-url]?bust=1.9 to force a fresh load
+- Or go to: https://bbmt1tm.github.io/FCU-Scanner/index.html?bust=1.9 to force a fresh load
 
 Resume option not showing after pressing Home:
 - This is fixed in v1.9 — update to the latest version
@@ -251,4 +251,4 @@ File not loading after discarding and reselecting:
 SUPPORT
 ------------------------------------------------------------------------
 App developed for internal use.
-For issues or feature requests raise with your BMS project lead.
+
