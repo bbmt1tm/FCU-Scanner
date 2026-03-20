@@ -140,15 +140,15 @@
 
     /* ── SCAN ── */
     #screen-scan{background:#000}
-    .scan-header{position:absolute;top:0;left:0;right:0;z-index:12;padding:14px 16px;background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);touch-action:manipulation;pointer-events:all}
-    .scan-back{background:rgba(255,255,255,.12);border:none;color:#fff;font-family:var(--sans);font-size:14px;font-weight:600;padding:8px 14px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:6px;touch-action:manipulation;pointer-events:all;position:relative;z-index:13}
+    .scan-header{position:absolute;top:0;left:0;right:0;z-index:10;padding:14px 16px;background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent)}
+    .scan-back{background:rgba(255,255,255,.12);border:none;color:#fff;font-family:var(--sans);font-size:14px;font-weight:600;padding:8px 14px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:6px}
     .scan-back svg{width:16px;height:16px}
     .scan-fcu-info{margin-top:10px;background:rgba(0,0,0,.6);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:10px 14px}
     .scan-fcu-ref{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent)}
     .scan-fcu-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
     .scan-room-num{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(245,166,35,.2);padding:2px 7px;border-radius:4px}
     .scan-room-name{font-size:12px;color:rgba(255,255,255,.55)}
-    #scan-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+    #scan-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
     .scan-overlay{position:absolute;inset:0;z-index:5;pointer-events:none}
     .scan-reticle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:280px;height:100px}
     .corner{position:absolute;width:28px;height:28px}
@@ -159,14 +159,14 @@
     .scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--accent),transparent);animation:scanline 1.8s ease-in-out infinite;border-radius:1px;box-shadow:0 0 8px var(--accent-glow)}
     @keyframes scanline{0%{top:15%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:85%;opacity:0}}
     .scan-hint{position:absolute;bottom:185px;left:0;right:0;text-align:center;z-index:5;color:rgba(255,255,255,.7);font-size:13px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
-    .scan-footer{position:absolute;bottom:0;left:0;right:0;z-index:12;padding:14px 14px 30px;background:linear-gradient(to top,rgba(0,0,0,.95),transparent);touch-action:manipulation;pointer-events:all}
+    .scan-footer{position:absolute;bottom:0;left:0;right:0;z-index:10;padding:14px 14px 30px;background:linear-gradient(to top,rgba(0,0,0,.95),transparent)}
     .scan-result-box{background:rgba(17,18,20,.9);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:10px;display:none}
     .scan-result-box.visible{display:block}
     .scan-result-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
     .scan-result-value{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);letter-spacing:.08em}
     .scan-actions{display:flex;gap:10px;margin-bottom:10px}
-    .btn-retry{flex:0 0 auto;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;padding:14px 18px;border-radius:var(--radius);cursor:pointer;touch-action:manipulation}
-    .btn-confirm{flex:1;background:var(--accent);border:none;color:#000;font-family:var(--sans);font-size:16px;font-weight:700;padding:14px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;touch-action:manipulation;pointer-events:all;position:relative;z-index:13}
+    .btn-retry{flex:0 0 auto;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;padding:14px 18px;border-radius:var(--radius);cursor:pointer}
+    .btn-confirm{flex:1;background:var(--accent);border:none;color:#000;font-family:var(--sans);font-size:16px;font-weight:700;padding:14px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
     .btn-confirm svg{width:17px;height:17px}
     .scan-flash{position:absolute;inset:0;z-index:20;background:rgba(34,197,94,.25);pointer-events:none;opacity:0}
     .scan-flash.flash{animation:flashAnim .5s ease-out forwards}
@@ -176,8 +176,6 @@
     .manual-input:focus{outline:none;border-color:var(--accent)}
     .manual-input::placeholder{color:rgba(255,255,255,.2);font-size:12px;letter-spacing:0}
     .scan-unsupported{position:absolute;inset:0;z-index:15;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;gap:12px}
-    .cam-switch-btn{position:absolute;top:14px;right:16px;z-index:11;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-family:var(--sans);font-size:12px;font-weight:600;padding:6px 10px;cursor:pointer;display:none;touch-action:manipulation;pointer-events:all}
-    .cam-switch-btn.show{display:block}
     .scan-unsupported.show{display:flex}
 
     /* ── SHARED ── */
@@ -266,13 +264,9 @@
     <div class="map-preview"><table class="preview-table" id="preview-table"></table></div>
     <div class="map-field"><label>FCU Reference column</label><select id="col-fcu"></select></div>
     <div class="map-field">
-      <label>Room Name column</label>
+      <label>Location column</label>
       <select id="col-location"></select>
-    </div>
-    <div class="map-field">
-      <label>Room Number column</label>
-      <select id="col-roomnum"></select>
-      <div class="hint" id="roomnum-hint" style="display:none"></div>
+      <div class="hint" id="location-hint" style="display:none"></div>
     </div>
     <div class="map-field"><label>Serial Number column</label><select id="col-serial"></select></div>
   </div>
@@ -338,8 +332,6 @@
       <div class="scan-line"></div>
     </div>
   </div>
-  <button class="cam-switch-btn" id="cam-switch-btn" onclick="switchCamera()">📷 Switch lens</button>
-
   <div class="scan-header">
     <button class="scan-back" onclick="stopScan()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Back
@@ -603,18 +595,11 @@ function buildMapScreen(sd){
     const tr=document.createElement('tr');hdrs.forEach((_,i)=>{const td=document.createElement('td');td.textContent=String(row[i]??'').replace(/\n/g,' ↵ ').substring(0,18);tr.appendChild(td);});tbl.appendChild(tr);
   });
 
-  // Populate selects — col-roomnum gets a special "same cell" option first
+  // Populate selects
   ['col-fcu','col-location','col-serial'].forEach(id=>{
     const sel=document.getElementById(id);sel.innerHTML='';
     hdrs.forEach((h,i)=>{const o=document.createElement('option');o.value=i;o.textContent=h||'Column '+(i+1);sel.appendChild(o);});
   });
-  // Room number select — special options at top
-  const rnSel=document.getElementById('col-roomnum');
-  rnSel.innerHTML='';
-  const optSameLine=document.createElement('option');optSameLine.value='same_line2';optSameLine.textContent='Same cell as Room Name — 2nd line';rnSel.appendChild(optSameLine);
-  const optSameSpace=document.createElement('option');optSameSpace.value='same_space';optSameSpace.textContent='Same cell as Room Name — trailing number';rnSel.appendChild(optSameSpace);
-  const optNone=document.createElement('option');optNone.value='none';optNone.textContent='— No room number —';rnSel.appendChild(optNone);
-  hdrs.forEach((h,i)=>{const o=document.createElement('option');o.value=i;o.textContent=h||'Column '+(i+1);rnSel.appendChild(o);});
 
   // Auto-detect
   const lower=hdrs.map(h=>h.toLowerCase());
@@ -623,80 +608,42 @@ function buildMapScreen(sd){
   document.getElementById('col-location').value=det(['location','room','name','description']);
   document.getElementById('col-serial').value=det(['serial','s/n','sn','barcode']);
 
-  // Auto-detect room number source
-  const rnColIdx=det(['room num','room no','room ref','room id','number','ref no']);
-  const locIdx=parseInt(document.getElementById('col-location').value);
-  const samples=sheetData[0].rows.slice(0,5).map(r=>String(r[locIdx]??''));
-  const hasNewline=samples.some(s=>s.includes('\n'));
-  const hasTrailNum=samples.some(s=>/\s+\d{3,}$/.test(s));
-  // Check if there is a dedicated room number column
-  const rnDedicated=lower.findIndex(h=>h.includes('room num')||h.includes('room no')||h.includes('room ref'));
-  if(rnDedicated>=0){
-    rnSel.value=rnDedicated;
-  } else if(hasNewline){
-    rnSel.value='same_line2';
-  } else if(hasTrailNum){
-    rnSel.value='same_space';
-  } else {
-    rnSel.value='none';
-  }
-  updateRoomnumHint();
-  rnSel.onchange=updateRoomnumHint;
-  document.getElementById('col-location').onchange=updateRoomnumHint;
+  // Check if location column has room number pattern
+  updateLocationHint();
+  document.getElementById('col-location').onchange=updateLocationHint;
 }
 
-function updateRoomnumHint(){
-  const rnVal=document.getElementById('col-roomnum').value;
-  const hint=document.getElementById('roomnum-hint');
+function updateLocationHint(){
+  const sel=document.getElementById('col-location');
+  const idx=parseInt(sel.value);
+  const hint=document.getElementById('location-hint');
   if(!sheetData.length){hint.style.display='none';return;}
-  const locIdx=parseInt(document.getElementById('col-location').value);
-  const samples=sheetData[0].rows.slice(0,5).map(r=>String(r[locIdx]??''));
-  if(rnVal==='same_line2'){
-    const ex=samples.find(s=>s.includes('\n'));
+  // Sample a few values
+  const samples=sheetData[0].rows.slice(0,5).map(r=>String(r[idx]??''));
+  const hasNewline=samples.some(s=>s.includes('\n'));
+  const hasNumber=samples.some(s=>/\n\d+/.test(s));
+  if(hasNewline&&hasNumber){
     hint.style.display='block';
-    hint.style.color=ex?'var(--green)':'var(--text-muted)';
-    hint.textContent=ex
-      ?'✓ Example: "'+ex.split('\n')[0].trim()+'" / "'+ex.split('\n')[1].trim()+'"'
-      :'No multi-line values detected in Room Name column — check selection.';
-  } else if(rnVal==='same_space'){
-    const ex=samples.find(s=>/\s+\d{3,}$/.test(s));
-    hint.style.display='block';
-    hint.style.color=ex?'var(--green)':'var(--text-muted)';
-    hint.textContent=ex?'✓ Trailing number detected in values':'No trailing numbers found — check selection.';
-  } else if(rnVal==='none'){
-    hint.style.display='block';
-    hint.style.color='var(--text-muted)';
-    hint.textContent='No room number will be shown.';
-  } else {
-    // dedicated column — show a sample value
-    const colIdx=parseInt(rnVal);
-    const ex=sheetData[0].rows.slice(0,5).map(r=>String(r[colIdx]??'')).find(s=>s.trim());
-    hint.style.display='block';
+    hint.textContent='✓ Room name and number detected in this column — both will be shown separately.';
     hint.style.color='var(--green)';
-    hint.textContent=ex?'✓ Example value: "'+ex+'"':'(no sample values found)';
-  }
+  }else if(hasNewline){
+    hint.style.display='block';
+    hint.textContent='Multi-line values detected — first line used as name, second as number.';
+    hint.style.color='var(--text-muted)';
+  }else{hint.style.display='none';}
 }
 
-// Parse room name from location field
-function parseRoomName(raw){
+// Parse location field — returns {roomName, roomNumber}
+function parseLocation(raw){
   const s=String(raw??'').trim();
-  // If multi-line, first line is room name
-  return s.split('\n')[0].trim();
-}
-// Extract room number based on the chosen roomnum mode and raw values
-function extractRoomNumber(locRaw, rnRaw, rnMode){
-  if(rnMode==='same_line2'){
-    const parts=String(locRaw??'').split('\n');
-    return parts.length>=2?parts[1].trim():'';
+  const parts=s.split('\n');
+  if(parts.length>=2){
+    return{roomName:parts[0].trim(),roomNumber:parts[1].trim()};
   }
-  if(rnMode==='same_space'){
-    const s=String(locRaw??'').trim();
-    const m=s.match(/^(.*?)\s+(\d{3,})$/);
-    return m?m[2].trim():'';
-  }
-  if(rnMode==='none') return '';
-  // dedicated column
-  return String(rnRaw??'').trim();
+  // Check if ends with a number (e.g. "Boardroom 16257")
+  const m=s.match(/^(.*?)\s+(\d{4,})$/);
+  if(m)return{roomName:m[1].trim(),roomNumber:m[2].trim()};
+  return{roomName:s,roomNumber:''};
 }
 
 function confirmMapping(){
@@ -704,35 +651,29 @@ function confirmMapping(){
   colMap.fcu=parseInt(document.getElementById('col-fcu').value);
   colMap.location=parseInt(document.getElementById('col-location').value);
   colMap.serial=parseInt(document.getElementById('col-serial').value);
-  // Room number: mode is 'same_line2', 'same_space', 'none', or a numeric column index
-  const rnRaw=document.getElementById('col-roomnum').value;
-  colMap.roomNumMode=isNaN(parseInt(rnRaw))?rnRaw:'col';
-  colMap.roomNum=isNaN(parseInt(rnRaw))?-1:parseInt(rnRaw);
-  // Store header names for per-sheet column resolution
+  // Store header names so we can re-resolve per sheet (each sheet may have different column order)
   colMap.fcuName=refHeaders[colMap.fcu];
   colMap.locationName=refHeaders[colMap.location];
   colMap.serialName=refHeaders[colMap.serial];
-  colMap.roomNumName=colMap.roomNum>=0?refHeaders[colMap.roomNum]:'';
 
   rows=[];
   let globalIdx=0;
   sheetData.forEach(sheet=>{
     const h=sheet.headers;
     const norm=s=>String(s??'').trim().toLowerCase();
+    // Find column by header name in THIS sheet — fall back to reference index if not found
     const ci=(name,fallback)=>{const i=h.findIndex(x=>norm(x)===norm(name));return i>=0?i:fallback;};
     const fcuCol=ci(colMap.fcuName,colMap.fcu);
     const locCol=ci(colMap.locationName,colMap.location);
     const serCol=ci(colMap.serialName,colMap.serial);
-    const rnCol=colMap.roomNum>=0?ci(colMap.roomNumName,colMap.roomNum):-1;
-    console.log('Sheet:',sheet.name,'fcuCol:',fcuCol,'locCol:',locCol,'serCol:',serCol,'rnCol:',rnCol,'mode:',colMap.roomNumMode);
+    console.log('Sheet:',sheet.name,'fcuCol:',fcuCol,'locCol:',locCol,'serCol:',serCol,'headers:',h);
     sheet.rows.forEach((row,rowIdx)=>{
       if(!row[fcuCol])return;
-      const locRaw=row[locCol];
-      const rnRaw=rnCol>=0?row[rnCol]:null;
+      const loc=parseLocation(row[locCol]);
       rows.push({
         fcuRef:String(row[fcuCol]).trim(),
-        roomName:parseRoomName(locRaw),
-        roomNumber:extractRoomNumber(locRaw,rnRaw,colMap.roomNumMode==='col'?'col':colMap.roomNumMode),
+        roomName:loc.roomName,
+        roomNumber:loc.roomNumber,
         serial:String(row[serCol]??'').trim(),
         floor:sheet.name,
         _sheetName:sheet.name,
@@ -872,9 +813,7 @@ async function startScan(idx){
   const startCam=async(c)=>{
     const s=await navigator.mediaDevices.getUserMedia(c);scanStream=s;
     const v=document.getElementById('scan-video');v.srcObject=s;await v.play();
-    barcodeDetector=new BarcodeDetector({formats:['code_128','code_39','data_matrix']});
-    enumerateCameras();
-    scanLoop();
+    barcodeDetector=new BarcodeDetector({formats:['code_128','code_39','ean_13','ean_8','data_matrix']});scanLoop();
   };
   try{await startCam({video:{facingMode:{exact:'environment'},width:{ideal:1920},height:{ideal:1080}}});}
   catch(e){try{await startCam({video:{facingMode:'environment'}});}catch(e2){document.getElementById('scan-unsupported').classList.add('show');}}
@@ -886,22 +825,7 @@ async function scanLoop(){
   try{const bc=await barcodeDetector.detect(v);if(bc.length>0){onDetected(bc[0].rawValue.trim().toUpperCase());return;}}catch(e){}
   scanAnimFrame=requestAnimationFrame(scanLoop);
 }
-function looksLikeSiemensSerial(val){
-  // Siemens DXR2 serials are hex strings: 0-9 and A-F, 6-14 chars
-  // Reject pure decimal strings longer than 10 chars (EAN-13 style retail barcodes)
-  if(/^\d+$/.test(val) && val.length > 10) return false;
-  // Must only contain hex characters
-  if(!/^[0-9A-F]+$/i.test(val)) return false;
-  // Must be at least 6 chars
-  if(val.length < 6) return false;
-  return true;
-}
 function onDetected(val){
-  if(!looksLikeSiemensSerial(val)){
-    // Silently ignore non-matching results and keep scanning
-    scanAnimFrame=requestAnimationFrame(scanLoop);
-    return;
-  }
   scannedValue=val;
   const f=document.getElementById('scan-flash');f.classList.remove('flash');void f.offsetWidth;f.classList.add('flash');
   if(navigator.vibrate)navigator.vibrate([80]);
@@ -971,57 +895,70 @@ function doSaveSerial(){
   fcu.serial=scannedValue;stopScan();renderList();triggerAutosave();
   showToast('Saved: '+scannedValue,true);
 }
-// ── CAMERA SWITCHING ──
-let availableCameras=[], currentCamIdx=0;
-
-async function enumerateCameras(){
-  try{
-    const devices=await navigator.mediaDevices.enumerateDevices();
-    const all=devices.filter(d=>d.kind==='videoinput');
-    // Filter out front-facing cameras by label
-    const frontWords=['front','selfie','user','facetime'];
-    const isFront=l=>frontWords.some(w=>l.toLowerCase().includes(w));
-    const backCams=all.filter(d=>!isFront(d.label));
-    availableCameras=backCams.length>0?backCams:all;
-    const btn=document.getElementById('cam-switch-btn');
-    if(availableCameras.length>1){btn.classList.add('show');updateLensLabel();}
-    else{btn.classList.remove('show');}
-  }catch(e){}
-}
-
-function updateLensLabel(){
-  const btn=document.getElementById('cam-switch-btn');
-  const cam=availableCameras[currentCamIdx];
-  if(cam&&cam.label){
-    const l=cam.label.replace(/camera/i,'').replace(/\s+/g,' ').trim();
-    btn.textContent='📷 '+(l.length>14?l.slice(0,14)+'…':l);
-  }else{
-    btn.textContent='📷 Lens '+(currentCamIdx+1)+'/'+availableCameras.length;
-  }
-}
-
-async function switchCamera(){
-  if(availableCameras.length<2)return;
-  currentCamIdx=(currentCamIdx+1)%availableCameras.length;
-  updateLensLabel();
-  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
-  if(scanAnimFrame){cancelAnimationFrame(scanAnimFrame);scanAnimFrame=null;}
-  try{
-    const cam=availableCameras[currentCamIdx];
-    const s=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:cam.deviceId},width:{ideal:1920},height:{ideal:1080}}});
-    scanStream=s;
-    const v=document.getElementById('scan-video');
-    v.srcObject=s;await v.play();
-    barcodeDetector=new BarcodeDetector({formats:['code_128','code_39','data_matrix']});
-    scanLoop();
-  }catch(e){showToast('Could not switch camera',false);}
-}
-
 function stopScan(){
   if(scanAnimFrame){cancelAnimationFrame(scanAnimFrame);scanAnimFrame=null;}
   if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
   document.getElementById('scan-video').srcObject=null;barcodeDetector=null;
   showScreen('screen-list');
+}
+
+// ── TOAST ──
+let tt;
+function showToast(msg,ok=true){
+  const t=document.getElementById('toast');
+  t.innerHTML=(ok?'<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ':'')+msg;
+  t.className='toast'+(ok?' success':'');void t.offsetWidth;t.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── NUMPAD ──
+function numpadPress(digit){
+  const inp=document.getElementById('search-input');
+  inp.value+=digit;
+  renderList();
+}
+function numpadDel(){
+  const inp=document.getElementById('search-input');
+  inp.value=inp.value.slice(0,-1);
+  renderList();
+}
+function numpadClear(){
+  document.getElementById('search-input').value='';
+  renderList();
+}
+
+// ── CLEAR / REPLACE SERIAL ──
+function promptClearSerial(){
+  const fcu=rows.find(r=>r._idx===currentFcuIdx);if(!fcu)return;
+  document.getElementById('clear-message').innerHTML=
+    'This will permanently remove the serial number for <strong>'+esc(fcu.fcuRef)+'</strong>:<br><br>'+
+    '<span style="font-family:var(--mono);color:var(--red);font-size:15px">'+esc(fcu.serial)+'</span>';
+  document.getElementById('clear-modal').classList.add('show');
+}
+function closeClearModal(){document.getElementById('clear-modal').classList.remove('show');}
+function confirmClearSerial(){
+  const fcu=rows.find(r=>r._idx===currentFcuIdx);if(!fcu)return;
+  fcu.serial='';
+  document.getElementById('clear-modal').classList.remove('show');
+  document.getElementById('scan-existing-box').style.display='none';
+  triggerAutosave();
+  renderList();  // update list in background so it's correct when user returns
+  retryScanning();  // stay on scan screen, ready for new scan
+  showToast('Serial cleared — ready to scan',true);
+}
+function closeReplaceModal(){document.getElementById('replace-modal').classList.remove('show');}
+function forceReplaceSerial(){
+  document.getElementById('replace-modal').classList.remove('show');
+  // Still need to run duplicate check even when replacing
+  const dupes=rows.filter(r=>r._idx!==currentFcuIdx&&r.serial&&r.serial.toUpperCase()===scannedValue.toUpperCase());
+  if(dupes.length>0){
+    const dupeList=dupes.map(r=>'<strong style="color:var(--accent);font-family:var(--mono)">'+(r.floor?r.floor+' · ':'')+r.fcuRef+'</strong>').join('<br>');
+    document.getElementById('dupe-message').innerHTML=
+      'Serial <span style="font-family:var(--mono);color:var(--accent)">'+scannedValue+'</span> is already assigned to:<br><br>'+dupeList+'<br><br>This may mean the wrong controller was scanned.';
+    document.getElementById('dupe-modal').classList.add('show');
+    return;
+  }
+  doSaveSerial();
 }
 
 // ── DROP ZONE ──
