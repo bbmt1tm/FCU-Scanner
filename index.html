@@ -97,12 +97,19 @@
     .progress-bar-wrap{height:3px;background:var(--surface2);border-radius:2px}
     .progress-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease}
     .progress-label{font-size:10px;color:var(--text-muted);font-family:var(--mono);padding:4px 0 8px}
-    .search-row{display:flex;gap:8px;padding-bottom:10px}
+    .search-row{display:flex;gap:8px;padding-bottom:6px}
     .search-wrap{flex:1;position:relative}
     .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-muted);pointer-events:none}
     .search-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:15px;padding:9px 11px 9px 36px;border-radius:var(--radius-sm)}
     .search-input:focus{outline:none;border-color:var(--accent)}
     .search-input::placeholder{color:var(--text-muted)}
+    .numpad{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding-bottom:10px}
+    .numpad-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:15px;font-weight:700;padding:7px 0;border-radius:6px;cursor:pointer;transition:background .1s,transform .1s;-webkit-user-select:none;user-select:none;text-align:center;line-height:1}
+    .numpad-btn:active{background:var(--accent);border-color:var(--accent);color:#000;transform:scale(.93)}
+    .numpad-btn.clr{font-size:11px;font-family:var(--sans);font-weight:700;color:var(--text-muted);letter-spacing:.02em}
+    .numpad-btn.clr:active{background:var(--red);border-color:var(--red);color:#fff}
+    .numpad-btn.del{font-size:13px;color:var(--text-muted)}
+    .numpad-btn.del:active{background:var(--red);border-color:var(--red);color:#fff}
     .filter-chips{display:flex;gap:6px;padding:0 0 10px;overflow-x:auto;scrollbar-width:none}
     .filter-chips::-webkit-scrollbar{display:none}
     .chip{flex-shrink:0;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;font-family:var(--sans);transition:all .15s}
@@ -271,8 +278,8 @@
     <div class="list-header-top">
       <span class="list-title">FCU List</span>
       <div class="header-actions">
-        <button class="btn-icon" onclick="loadNewFile()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>New
+        <button class="btn-icon" onclick="goHome()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
         </button>
         <button class="btn-icon btn-save-progress" onclick="saveProgressFile()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save
@@ -291,8 +298,22 @@
     <div class="search-row">
       <div class="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input class="search-input" id="search-input" type="text" placeholder="Search FCU ref, room name or number…" oninput="renderList()">
+        <input class="search-input" id="search-input" type="text" placeholder="Search FCU ref, room name or number…" oninput="renderList()" readonly onfocus="this.removeAttribute('readonly')">
       </div>
+    </div>
+    <div class="numpad" id="numpad">
+      <button class="numpad-btn" onclick="numpadPress('1')">1</button>
+      <button class="numpad-btn" onclick="numpadPress('2')">2</button>
+      <button class="numpad-btn" onclick="numpadPress('3')">3</button>
+      <button class="numpad-btn" onclick="numpadPress('4')">4</button>
+      <button class="numpad-btn" onclick="numpadPress('5')">5</button>
+      <button class="numpad-btn" onclick="numpadPress('6')">6</button>
+      <button class="numpad-btn" onclick="numpadPress('7')">7</button>
+      <button class="numpad-btn" onclick="numpadPress('8')">8</button>
+      <button class="numpad-btn" onclick="numpadPress('9')">9</button>
+      <button class="numpad-btn" onclick="numpadPress('0')">0</button>
+      <button class="numpad-btn del" onclick="numpadDel()">&#x232B;</button>
+      <button class="numpad-btn clr" onclick="numpadClear()">CLR</button>
     </div>
     <div class="filter-chips" id="floor-chips"></div>
   </div>
@@ -461,6 +482,7 @@ async function loadProgressFile(file){
 
 // ── FILE LOAD — multi-sheet aware ──
 function loadNewFile(){document.getElementById('file-input').click();}
+function goHome(){showScreen('screen-load');}
 
 async function handleFileSelect(file){
   if(!file)return;
@@ -764,6 +786,22 @@ function showToast(msg,ok=true){
   t.innerHTML=(ok?'<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ':'')+msg;
   t.className='toast'+(ok?' success':'');void t.offsetWidth;t.classList.add('show');
   clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── NUMPAD ──
+function numpadPress(digit){
+  const inp=document.getElementById('search-input');
+  inp.value+=digit;
+  renderList();
+}
+function numpadDel(){
+  const inp=document.getElementById('search-input');
+  inp.value=inp.value.slice(0,-1);
+  renderList();
+}
+function numpadClear(){
+  document.getElementById('search-input').value='';
+  renderList();
 }
 
 // ── DROP ZONE ──
