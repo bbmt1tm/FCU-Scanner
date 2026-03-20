@@ -641,8 +641,7 @@ function buildMapScreen(sd){
   const rnColIdx=det(['room num','room no','room ref','room id','number','ref no']);
   const locIdx=parseInt(document.getElementById('col-location').value);
   const samples=sheetData[0].rows.slice(0,5).map(r=>String(r[locIdx]??''));
-  const hasNewline=samples.some(s=>s.includes('
-'));
+  const hasNewline=samples.some(s=>s.includes('\n'));
   const hasTrailNum=samples.some(s=>/\s+\d{3,}$/.test(s));
   // Check if there is a dedicated room number column
   const rnDedicated=lower.findIndex(h=>h.includes('room num')||h.includes('room no')||h.includes('room ref'));
@@ -667,14 +666,11 @@ function updateRoomnumHint(){
   const locIdx=parseInt(document.getElementById('col-location').value);
   const samples=sheetData[0].rows.slice(0,5).map(r=>String(r[locIdx]??''));
   if(rnVal==='same_line2'){
-    const ex=samples.find(s=>s.includes('
-'));
+    const ex=samples.find(s=>s.includes('\n'));
     hint.style.display='block';
     hint.style.color=ex?'var(--green)':'var(--text-muted)';
     hint.textContent=ex
-      ?'✓ Example: "'+ex.split('
-')[0].trim()+'" / "'+ex.split('
-')[1].trim()+'"'
+      ?'✓ Example: "'+ex.split('\n')[0].trim()+'" / "'+ex.split('\n')[1].trim()+'"'
       :'No multi-line values detected in Room Name column — check selection.';
   } else if(rnVal==='same_space'){
     const ex=samples.find(s=>/\s+\d{3,}$/.test(s));
@@ -699,14 +695,12 @@ function updateRoomnumHint(){
 function parseRoomName(raw){
   const s=String(raw??'').trim();
   // If multi-line, first line is room name
-  return s.split('
-')[0].trim();
+  return s.split('\n')[0].trim();
 }
 // Extract room number based on the chosen roomnum mode and raw values
 function extractRoomNumber(locRaw, rnRaw, rnMode){
   if(rnMode==='same_line2'){
-    const parts=String(locRaw??'').split('
-');
+    const parts=String(locRaw??'').split('\n');
     return parts.length>=2?parts[1].trim():'';
   }
   if(rnMode==='same_space'){
