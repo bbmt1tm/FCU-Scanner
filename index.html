@@ -215,7 +215,7 @@
     </div>
     <h1>FCU SCANNER</h1>
     <p>DXR2 Serial Number Capture</p>
-    <p style="font-family:var(--mono);font-size:10px;color:#3a3d42;margin-top:8px;letter-spacing:.04em">v1.2</p>
+    <p style="font-family:var(--mono);font-size:10px;color:#3a3d42;margin-top:8px;letter-spacing:.04em" id="version-label"></p>
   </div>
 
   <div class="resume-card" id="resume-card">
@@ -399,6 +399,7 @@
 </div>
 </div>
 
+<script src="version.js"></script>
 <script>
 const LS_KEY='fcu_scanner_session';
 
@@ -413,6 +414,7 @@ function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classL
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('version-label').textContent=APP_VERSION;
   const saved=loadLS();
   if(saved){
     const done=saved.rows.filter(r=>r.serial).length,total=saved.rows.length,pct=total?(done/total*100):0;
