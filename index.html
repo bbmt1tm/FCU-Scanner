@@ -583,24 +583,38 @@ function parseLocation(raw){
 }
 
 function confirmMapping(){
+  const refHeaders=sheetData[0].headers;
   colMap.fcu=parseInt(document.getElementById('col-fcu').value);
   colMap.location=parseInt(document.getElementById('col-location').value);
   colMap.serial=parseInt(document.getElementById('col-serial').value);
+  // Store header names so we can re-resolve per sheet (each sheet may have different column order)
+  colMap.fcuName=refHeaders[colMap.fcu];
+  colMap.locationName=refHeaders[colMap.location];
+  colMap.serialName=refHeaders[colMap.serial];
 
   rows=[];
   let globalIdx=0;
   sheetData.forEach(sheet=>{
+    const h=sheet.headers;
+    const norm=s=>String(s??'').trim().toLowerCase();
+    // Find column by header name in THIS sheet — fall back to reference index if not found
+    const ci=(name,fallback)=>{const i=h.findIndex(x=>norm(x)===norm(name));return i>=0?i:fallback;};
+    const fcuCol=ci(colMap.fcuName,colMap.fcu);
+    const locCol=ci(colMap.locationName,colMap.location);
+    const serCol=ci(colMap.serialName,colMap.serial);
+    console.log('Sheet:',sheet.name,'fcuCol:',fcuCol,'locCol:',locCol,'serCol:',serCol,'headers:',h);
     sheet.rows.forEach((row,rowIdx)=>{
-      if(!row[colMap.fcu])return;
-      const loc=parseLocation(row[colMap.location]);
+      if(!row[fcuCol])return;
+      const loc=parseLocation(row[locCol]);
       rows.push({
-        fcuRef:String(row[colMap.fcu]).trim(),
+        fcuRef:String(row[fcuCol]).trim(),
         roomName:loc.roomName,
         roomNumber:loc.roomNumber,
-        serial:String(row[colMap.serial]??'').trim(),
+        serial:String(row[serCol]??'').trim(),
         floor:sheet.name,
         _sheetName:sheet.name,
         _sheetRow:rowIdx,
+        _serCol:serCol,
         _idx:globalIdx++
       });
     });
