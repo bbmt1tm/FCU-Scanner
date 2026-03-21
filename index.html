@@ -266,7 +266,10 @@
     <div class="map-field">
       <label>Location column</label>
       <select id="col-location"></select>
-      <div class="hint" id="location-hint" style="display:none"></div>
+    </div>
+    <div class="map-field">
+      <label>Room Number column <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <select id="col-roomnum"></select>
     </div>
     <div class="map-field"><label>Serial Number column</label><select id="col-serial"></select></div>
   </div>
@@ -600,6 +603,10 @@ function buildMapScreen(sd){
     const sel=document.getElementById(id);sel.innerHTML='';
     hdrs.forEach((h,i)=>{const o=document.createElement('option');o.value=i;o.textContent=h||'Column '+(i+1);sel.appendChild(o);});
   });
+  // Room number select — None option first, then all columns
+  const rnSel=document.getElementById('col-roomnum');rnSel.innerHTML='';
+  const noneOpt=document.createElement('option');noneOpt.value='-1';noneOpt.textContent='— None —';rnSel.appendChild(noneOpt);
+  hdrs.forEach((h,i)=>{const o=document.createElement('option');o.value=i;o.textContent=h||'Column '+(i+1);rnSel.appendChild(o);});
 
   // Auto-detect
   const lower=hdrs.map(h=>h.toLowerCase());
@@ -607,43 +614,14 @@ function buildMapScreen(sd){
   document.getElementById('col-fcu').value=det(['unit ref','fcu','ref','tag','id']);
   document.getElementById('col-location').value=det(['location','room','name','description']);
   document.getElementById('col-serial').value=det(['serial','s/n','sn','barcode']);
-
-  // Check if location column has room number pattern
-  updateLocationHint();
-  document.getElementById('col-location').onchange=updateLocationHint;
+  // Auto-detect room number column — look for a dedicated column, default to None
+  const rnIdx=lower.findIndex(h=>h.includes('room num')||h.includes('room no')||h.includes('room ref')||h.includes('room id'));
+  document.getElementById('col-roomnum').value=rnIdx>=0?rnIdx:'-1';
 }
 
-function updateLocationHint(){
-  const sel=document.getElementById('col-location');
-  const idx=parseInt(sel.value);
-  const hint=document.getElementById('location-hint');
-  if(!sheetData.length){hint.style.display='none';return;}
-  // Sample a few values
-  const samples=sheetData[0].rows.slice(0,5).map(r=>String(r[idx]??''));
-  const hasNewline=samples.some(s=>s.includes('\n'));
-  const hasNumber=samples.some(s=>/\n\d+/.test(s));
-  if(hasNewline&&hasNumber){
-    hint.style.display='block';
-    hint.textContent='✓ Room name and number detected in this column — both will be shown separately.';
-    hint.style.color='var(--green)';
-  }else if(hasNewline){
-    hint.style.display='block';
-    hint.textContent='Multi-line values detected — first line used as name, second as number.';
-    hint.style.color='var(--text-muted)';
-  }else{hint.style.display='none';}
-}
-
-// Parse location field — returns {roomName, roomNumber}
-function parseLocation(raw){
-  const s=String(raw??'').trim();
-  const parts=s.split('\n');
-  if(parts.length>=2){
-    return{roomName:parts[0].trim(),roomNumber:parts[1].trim()};
-  }
-  // Check if ends with a number (e.g. "Boardroom 16257")
-  const m=s.match(/^(.*?)\s+(\d{4,})$/);
-  if(m)return{roomName:m[1].trim(),roomNumber:m[2].trim()};
-  return{roomName:s,roomNumber:''};
+// Parse room name — just return the raw string trimmed (room number comes from its own column now)
+function parseRoomName(raw){
+  return String(raw??'').trim();
 }
 
 function confirmMapping(){
@@ -651,10 +629,12 @@ function confirmMapping(){
   colMap.fcu=parseInt(document.getElementById('col-fcu').value);
   colMap.location=parseInt(document.getElementById('col-location').value);
   colMap.serial=parseInt(document.getElementById('col-serial').value);
+  colMap.roomNum=parseInt(document.getElementById('col-roomnum').value); // -1 = none
   // Store header names so we can re-resolve per sheet (each sheet may have different column order)
   colMap.fcuName=refHeaders[colMap.fcu];
   colMap.locationName=refHeaders[colMap.location];
   colMap.serialName=refHeaders[colMap.serial];
+  colMap.roomNumName=colMap.roomNum>=0?refHeaders[colMap.roomNum]:'';
 
   rows=[];
   let globalIdx=0;
@@ -666,14 +646,14 @@ function confirmMapping(){
     const fcuCol=ci(colMap.fcuName,colMap.fcu);
     const locCol=ci(colMap.locationName,colMap.location);
     const serCol=ci(colMap.serialName,colMap.serial);
-    console.log('Sheet:',sheet.name,'fcuCol:',fcuCol,'locCol:',locCol,'serCol:',serCol,'headers:',h);
+    const rnCol=colMap.roomNum>=0?ci(colMap.roomNumName,colMap.roomNum):-1;
+    console.log('Sheet:',sheet.name,'fcuCol:',fcuCol,'locCol:',locCol,'serCol:',serCol,'rnCol:',rnCol,'headers:',h);
     sheet.rows.forEach((row,rowIdx)=>{
       if(!row[fcuCol])return;
-      const loc=parseLocation(row[locCol]);
       rows.push({
         fcuRef:String(row[fcuCol]).trim(),
-        roomName:loc.roomName,
-        roomNumber:loc.roomNumber,
+        roomName:parseRoomName(row[locCol]),
+        roomNumber:rnCol>=0?String(row[rnCol]??'').trim():'',
         serial:String(row[serCol]??'').trim(),
         floor:sheet.name,
         _sheetName:sheet.name,
@@ -694,11 +674,10 @@ function loadDemoData(){
     {name:'Level 06',headers:['Unit Ref No.','Location','Serial Number'],rows:Array.from({length:15},(_,i)=>['FCU-1060'+(i+1).toString().padStart(3,'0'),'Meeting Room\n165'+(70+i),i<3?'24002'+i.toString(16).toUpperCase()+'B90F':''])}
   ];
   originalFileName='FCU_Demo';originalFormat='xlsx';
-  colMap={fcu:0,location:1,serial:2};
+  colMap={fcu:0,location:1,serial:2,roomNum:-1,fcuName:'Unit Ref No.',locationName:'Location',serialName:'Serial Number',roomNumName:''};
   rows=[];let idx=0;
   sheetData.forEach(s=>s.rows.forEach((r,ri)=>{
-    const loc=parseLocation(r[1]);
-    rows.push({fcuRef:r[0],roomName:loc.roomName,roomNumber:loc.roomNumber,serial:r[2],floor:s.name,_sheetName:s.name,_sheetRow:ri,_idx:idx++});
+    rows.push({fcuRef:r[0],roomName:parseRoomName(r[1]),roomNumber:'',serial:r[2],floor:s.name,_sheetName:s.name,_sheetRow:ri,_serCol:2,_idx:idx++});
   }));
   buildFloorChips();renderList();saveLS();showScreen('screen-list');
 }
