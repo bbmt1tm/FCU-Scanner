@@ -248,6 +248,8 @@ File not loading after discarding and reselecting:
 
 
 ------------------------------------------------------------------------
+## Licence
+MIT — free to use for any purpose, commercial or otherwise.
 SUPPORT
 ------------------------------------------------------------------------
 App developed for internal use.
